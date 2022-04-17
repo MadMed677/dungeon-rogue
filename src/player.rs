@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::Player;
+use crate::{Player, Speed};
 
 pub struct PlayerPlugin;
 
@@ -22,13 +22,17 @@ fn spawn_player(mut commands: Commands) {
             ..Default::default()
         })
         .insert(Player)
+        .insert(Speed(3.0))
         .with_children(|parent| {
             parent.spawn_bundle(OrthographicCameraBundle::new_2d());
         });
 }
 
-fn player_movement(keyboard: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>) {
-    if let Ok(mut transform) = query.get_single_mut() {
+fn player_movement(
+    keyboard: Res<Input<KeyCode>>,
+    mut query: Query<(&Speed, &mut Transform), With<Player>>,
+) {
+    if let Ok((speed, mut transform)) = query.get_single_mut() {
         let direction = if keyboard.pressed(KeyCode::Left) {
             -1.0
         } else if keyboard.pressed(KeyCode::Right) {
@@ -37,6 +41,6 @@ fn player_movement(keyboard: Res<Input<KeyCode>>, mut query: Query<&mut Transfor
             0.0
         };
 
-        transform.translation.x += direction * 3.0;
+        transform.translation.x += direction * speed.0;
     }
 }
