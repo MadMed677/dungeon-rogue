@@ -3,6 +3,7 @@ mod player;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
+use bevy_inspector_egui::WorldInspectorPlugin;
 use map::MapPlugin;
 use player::PlayerPlugin;
 
@@ -34,11 +35,12 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(WindowDescriptor {
             title: String::from("Dungeon Rogue"),
-            width: 600.0,
+            width: 700.0,
             height: 680.0,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_startup_system(setup)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())

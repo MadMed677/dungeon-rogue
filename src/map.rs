@@ -64,11 +64,12 @@ fn spawn_map2(mut commands: Commands, asset_server: Res<AssetServer>, mut map_qu
             // TextureSize(96.0, 16.0),
             MapSize(2, 2),
             ChunkSize(8, 8),
+            // TileSize(15.0, 20.0),
             TileSize(16.0, 16.0),
             TextureSize(96.0, 16.0),
         ),
         0,
-        0,
+        1,
     );
 
     layer_builder.set_all(TileBundle::default());
@@ -95,8 +96,10 @@ fn spawn_map(mut commands: Commands, windows: Res<Windows>) {
 
     let map = CustomMap::new(width as usize, height as usize);
 
+    let mut sprites = vec![];
+
     for (tile, x, y) in map.tiles_2d().iter() {
-        commands.spawn_bundle(SpriteBundle {
+        sprites.push(SpriteBundle {
             sprite: Sprite {
                 color: match tile {
                     TileType::Floor => Color::rgb(0.5, 0.5, 0.5),
@@ -112,6 +115,8 @@ fn spawn_map(mut commands: Commands, windows: Res<Windows>) {
             ..Default::default()
         });
     }
+
+    commands.spawn_batch(sprites);
 }
 
 pub fn set_texture_filters_to_nearest(

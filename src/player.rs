@@ -33,14 +33,20 @@ fn player_movement(
     mut query: Query<(&Speed, &mut Transform), With<Player>>,
 ) {
     if let Ok((speed, mut transform)) = query.get_single_mut() {
+        // Represent (x, y) coordinates
         let direction = if keyboard.pressed(KeyCode::Left) {
-            -1.0
+            (-1.0, 0.0)
         } else if keyboard.pressed(KeyCode::Right) {
-            1.0
+            (1.0, 0.0)
+        } else if keyboard.pressed(KeyCode::Up) {
+            (0.0, 1.0)
+        } else if keyboard.pressed(KeyCode::Down) {
+            (0.0, -1.0)
         } else {
-            0.0
+            (0.0, 0.0)
         };
 
-        transform.translation.x += direction * speed.0;
+        transform.translation.x += direction.0 * speed.0;
+        transform.translation.y += direction.1 * speed.0;
     }
 }
