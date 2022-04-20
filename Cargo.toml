@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = {version = "0.6.1", features = ["dynamic"]}
-bevy_ecs_tilemap = "0.5.0"
-bevy_ecs_ldtk = "0.2.0"
+bevy = {version = "0.6", features = ["dynamic"]}
+bevy_ecs_ldtk = { git = "https://github.com/Trouv/bevy_ecs_ldtk", rev = "7e499ab89b9049146255fa4b7543763dcc7adbf9" }
 bevy-inspector-egui = "0.9.0"
