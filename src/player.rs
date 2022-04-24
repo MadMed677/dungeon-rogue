@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{Player, Speed};
+use crate::Speed;
+
+#[derive(Component)]
+pub struct Player;
 
 pub struct PlayerPlugin;
 

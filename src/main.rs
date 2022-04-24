@@ -8,9 +8,6 @@ use map::MapPlugin;
 use player::PlayerPlugin;
 
 #[derive(Component)]
-pub struct Player;
-
-#[derive(Component)]
 pub struct Speed(f32);
 
 fn main() {

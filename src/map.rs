@@ -1,13 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
-use crate::Player;
-
-#[derive(Default, Component)]
-struct ComponentA;
-
-#[derive(Default, Component)]
-struct ComponentB;
+use crate::player::Player;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Wall;
@@ -15,16 +9,6 @@ pub struct Wall;
 #[derive(Clone, Debug, Default, Bundle, LdtkIntCell)]
 pub struct WallBundle {
     wall: Wall,
-}
-
-#[derive(Bundle, LdtkEntity)]
-pub struct MyBundle {
-    a: ComponentA,
-    b: ComponentB,
-
-    #[sprite_sheet_bundle]
-    #[bundle]
-    sprite_bundle: SpriteSheetBundle,
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -38,12 +22,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 const ASPECT_RATIO: f32 = 16.0 / 9.0;
-
-fn spawn_wall_collision(
-    mut commands: Commands,
-    wall_query: Query<(&GridCoords, &Parent), Added<Wall>>,
-) {
-}
 
 fn fit_camera_inside_current_level(
     mut camera_query: Query<(&mut OrthographicProjection, &mut Transform), Without<Player>>,
@@ -94,10 +72,8 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(LdtkPlugin)
             .add_startup_system(setup)
-            .add_system(spawn_wall_collision)
             .add_system(fit_camera_inside_current_level)
             .insert_resource(LevelSelection::Index(0))
-            .register_ldtk_entity::<MyBundle>("MyEntityIdentifier")
             .register_ldtk_int_cell::<WallBundle>(1);
     }
 }
