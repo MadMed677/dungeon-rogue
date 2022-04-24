@@ -22,10 +22,10 @@ fn spawn_player(mut commands: Commands) {
             ..Default::default()
         })
         .insert(Player)
-        .insert(Speed(3.0))
-        .with_children(|parent| {
-            parent.spawn_bundle(OrthographicCameraBundle::new_2d());
-        });
+        .insert(Speed(7.0));
+    // .with_children(|parent| {
+    //     parent.spawn_bundle(OrthographicCameraBundle::new_2d());
+    // });
 }
 
 fn player_movement(

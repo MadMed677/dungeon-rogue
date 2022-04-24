@@ -19,13 +19,13 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(WindowDescriptor {
             title: String::from("Dungeon Rogue"),
-            width: 800.0,
-            height: 680.0,
+            width: 1024.0,
+            height: 576.0,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(WorldInspectorPlugin::new())
+        // .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
