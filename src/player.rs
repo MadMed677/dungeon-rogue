@@ -1,12 +1,20 @@
 use bevy::prelude::*;
+use bevy_ecs_ldtk::prelude::*;
 
 use crate::{Player, Speed};
+
+#[derive(Default, Bundle, LdtkEntity)]
+pub struct PlayerBundle {
+    pub player: Player,
+    pub speed: Speed,
+}
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_stage("game_player_plugin", SystemStage::single(spawn_player))
+            .register_ldtk_entity::<PlayerBundle>("Player")
             .add_system(player_movement);
     }
 }
@@ -21,8 +29,8 @@ fn spawn_player(mut commands: Commands) {
             },
             ..Default::default()
         })
-        .insert(Player)
-        .insert(Speed(7.0));
+        // .insert(Player)
+        .insert(Speed(4.0));
     // .with_children(|parent| {
     //     parent.spawn_bundle(OrthographicCameraBundle::new_2d());
     // });

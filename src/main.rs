@@ -8,11 +8,17 @@ use player::PlayerPlugin;
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
-#[derive(Component)]
-struct Player;
+#[derive(Component, Default)]
+pub struct Player;
 
 #[derive(Component)]
-struct Speed(f32);
+pub struct Speed(f32);
+
+impl Default for Speed {
+    fn default() -> Self {
+        Self(0.0)
+    }
+}
 
 fn main() {
     App::new()
@@ -24,8 +30,8 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        // .add_plugin(WorldInspectorPlugin::new())
-        // .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
