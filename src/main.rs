@@ -1,24 +1,17 @@
+mod debug;
 mod map;
 mod player;
 
 use bevy::prelude::*;
-use bevy_inspector_egui::WorldInspectorPlugin;
+use debug::DebugPlugin;
 use map::MapPlugin;
 use player::PlayerPlugin;
 
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct Player;
 
 #[derive(Component)]
 pub struct Speed(f32);
-
-impl Default for Speed {
-    fn default() -> Self {
-        Self(0.0)
-    }
-}
 
 fn main() {
     App::new()
@@ -30,9 +23,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(DebugPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
         .run();
