@@ -1,14 +1,15 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
+use bevy_inspector_egui::Inspectable;
 
 use crate::player::Player;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component, Inspectable)]
 pub struct Wall;
 
 #[derive(Clone, Debug, Default, Bundle, LdtkIntCell)]
 pub struct WallBundle {
-    wall: Wall,
+    pub wall: Wall,
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -66,13 +67,20 @@ fn fit_camera_inside_current_level(
     };
 }
 
+fn filter_map(map_query: Query<(&GridCoords), With<Wall>>) {
+    for tile in map_query.iter() {
+        println!("Wall {:?}", tile);
+    }
+}
+
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(LdtkPlugin)
             .add_startup_system(setup)
-            .add_system(fit_camera_inside_current_level)
+            .add_system(fit_camera_inside_current_level.after("movement"))
+            // .add_system(filter_map)
             .insert_resource(LevelSelection::Index(0))
             .register_ldtk_int_cell::<WallBundle>(1);
     }

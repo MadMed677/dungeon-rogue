@@ -3,11 +3,12 @@ mod map;
 mod player;
 
 use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
 use debug::DebugPlugin;
 use map::MapPlugin;
 use player::PlayerPlugin;
 
-#[derive(Component)]
+#[derive(Component, Inspectable)]
 pub struct Speed(f32);
 
 fn main() {
@@ -17,6 +18,7 @@ fn main() {
             title: String::from("Dungeon Rogue"),
             width: 1024.0,
             height: 576.0,
+            resizable: false,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

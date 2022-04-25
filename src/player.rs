@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
 
 use crate::Speed;
 
-#[derive(Component)]
+#[derive(Component, Inspectable)]
 pub struct Player;
 
 pub struct PlayerPlugin;
@@ -23,7 +24,7 @@ fn spawn_player(mut commands: Commands) {
                 ..Default::default()
             },
             transform: Transform {
-                translation: Vec3::new(150.0, 150.0, 1.0),
+                translation: Vec3::new(150.0, 150.0, 2.0),
                 ..Default::default()
             },
             ..Default::default()
