@@ -1,6 +1,7 @@
 mod camera;
 mod debug;
 mod map;
+mod physics;
 mod player;
 
 use bevy::prelude::*;
@@ -9,6 +10,7 @@ use bevy_rapier2d::prelude::*;
 use camera::CameraPlugin;
 use debug::DebugPlugin;
 use map::MapPlugin;
+use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 
 #[derive(Component, Inspectable)]
@@ -25,10 +27,10 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(MapPlugin)
         .add_plugin(CameraPlugin)
         .add_plugin(PlayerPlugin)
+        .add_plugin(PhysicsPlugin)
         .add_plugin(DebugPlugin)
         .run();
 }

@@ -3,7 +3,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::{map::Wall, Speed};
+use crate::{map::Wall, physics::GRAPHICS_TO_PHYSICS, Speed};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Component, Inspectable)]
@@ -19,32 +19,20 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+fn spawn_player(mut commands: Commands) {
     // Set the gravity as zero
-    rapier_config.gravity = Vector::zeros();
+    // rapier_config.gravity = Vector::zeros();
 
     let x = 150.0;
     let y = 150.0;
 
-    let rigid_body = RigidBodyBundle {
-        position: Vec2::new(x, y).into(),
-        ..Default::default()
-    };
-
     let sprite_size = 10.0;
 
-    let collider = ColliderBundle {
-        shape: ColliderShape::ball(sprite_size / 2.0).into(),
-        material: ColliderMaterial {
-            restitution: 0.7,
-            ..Default::default()
-        }
-        .into(),
-        ..Default::default()
-    };
-
     commands
-        .spawn_bundle(rigid_body)
+        .spawn_bundle(RigidBodyBundle {
+            position: Vec2::new(x / GRAPHICS_TO_PHYSICS, y / GRAPHICS_TO_PHYSICS).into(),
+            ..Default::default()
+        })
         .insert_bundle(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.7, 0.7, 0.7),
@@ -57,8 +45,21 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
             },
             ..Default::default()
         })
-        .insert_bundle(collider)
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(
+                sprite_size / GRAPHICS_TO_PHYSICS / 2.0,
+                sprite_size / GRAPHICS_TO_PHYSICS / 2.0,
+            )
+            .into(),
+            material: ColliderMaterial {
+                restitution: 0.7,
+                ..Default::default()
+            }
+            .into(),
+            ..Default::default()
+        })
         .insert(Player)
+        // .insert(ColliderPositionSync::Discrete)
         .insert(RigidBodyPositionSync::Discrete)
         // .insert(ColliderDebugRender::with_id(1))
         .insert(Speed(5.0));
@@ -66,9 +67,9 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
 
 fn player_movement(
     keyboard: Res<Input<KeyCode>>,
-    mut query: Query<(&Speed, &mut RigidBodyPositionComponent), With<Player>>,
+    mut query: Query<(&Speed, &mut RigidBodyVelocityComponent), With<Player>>,
 ) {
-    if let Ok((speed, mut rb_pos)) = query.get_single_mut() {
+    if let Ok((speed, mut velocity)) = query.get_single_mut() {
         // Represent (x, y) coordinates
         let direction_x = if keyboard.pressed(KeyCode::Left) {
             -1.0
@@ -86,12 +87,7 @@ fn player_movement(
             0.0
         };
 
-        rb_pos.position.translation.x += direction_x * speed.0;
-        rb_pos.position.translation.y += direction_y * speed.0;
-        // velocity.linvel = Vec2::new(direction_x * speed.0, direction_y * speed.0).into();
-        // transform.translation.y += direction_y * speed.0;
-        // transform.translation.x += direction_x * speed.0;
-        // transform.translation.y += direction_y * speed.0;
+        velocity.linvel = Vector::new(direction_x * speed.0, direction_y * speed.0);
     }
 }
 
