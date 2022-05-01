@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
+use bevy_rapier2d::prelude::*;
 
 use crate::player::Player;
 
@@ -13,8 +14,6 @@ pub struct WallBundle {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-
     commands.spawn_bundle(LdtkWorldBundle {
         // ldtk_handle: asset_server.load("test.ldtk"),
         ldtk_handle: asset_server.load("Typical_2D_platformer_example.ldtk"),
@@ -67,9 +66,19 @@ fn fit_camera_inside_current_level(
     };
 }
 
-fn filter_map(map_query: Query<(&GridCoords), With<Wall>>) {
-    for tile in map_query.iter() {
-        println!("Wall {:?}", tile);
+fn spawn_wall_collision(
+    mut commands: Commands,
+    map_query: Query<(Entity, &GridCoords, &Parent), Added<Wall>>,
+) {
+    for (entity, grid_coords, parent) in map_query.iter() {
+        println!("Grid coords: {:?}", grid_coords);
+
+        let collider = ColliderBundle {
+            shape: ColliderShape::cuboid(100.0, 0.1).into(),
+            ..Default::default()
+        };
+
+        commands.entity(entity).insert_bundle(collider);
     }
 }
 
@@ -80,7 +89,7 @@ impl Plugin for MapPlugin {
         app.add_plugin(LdtkPlugin)
             .add_startup_system(setup)
             .add_system(fit_camera_inside_current_level.after("movement"))
-            // .add_system(filter_map)
+            // .add_system(spawn_wall_collision)
             .insert_resource(LevelSelection::Index(0))
             .register_ldtk_int_cell::<WallBundle>(1);
     }

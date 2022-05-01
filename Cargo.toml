@@ -9,3 +9,4 @@ edition = "2021"
 bevy = {version = "0.6", features = ["dynamic"]}
 bevy_ecs_ldtk = { git = "https://github.com/Trouv/bevy_ecs_ldtk", rev = "7e499ab89b9049146255fa4b7543763dcc7adbf9" }
 bevy-inspector-egui = "0.9.0"
+bevy_rapier2d = { version = "0.12.1", features = ["simd-stable", "render"] }
