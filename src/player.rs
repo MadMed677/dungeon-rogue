@@ -14,23 +14,59 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(spawn_player)
+            .add_startup_system(spawn_floor)
             .add_system(player_movement)
             .add_system(player_collision);
     }
+}
+
+fn spawn_floor(mut commands: Commands) {
+    let sprite_width = 200.0;
+    let sprite_height = 10.0;
+
+    commands
+        .spawn_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(
+                sprite_width / GRAPHICS_TO_PHYSICS / 2.0,
+                sprite_height / GRAPHICS_TO_PHYSICS / 2.0,
+            )
+            .into(),
+            collider_type: ColliderType::Solid.into(),
+            position: Vec2::new(400.0 / GRAPHICS_TO_PHYSICS, 200.0 / GRAPHICS_TO_PHYSICS).into(),
+            material: ColliderMaterial {
+                friction: 1.0,
+                ..Default::default()
+            }
+            .into(),
+            ..Default::default()
+        })
+        .insert_bundle(SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(0.5, 0.5, 0.5),
+                custom_size: Some(Vec2::new(sprite_width, sprite_height)),
+                ..Default::default()
+            },
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 2.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete);
 }
 
 fn spawn_player(mut commands: Commands) {
     // Set the gravity as zero
     // rapier_config.gravity = Vector::zeros();
 
-    let x = 150.0;
-    let y = 150.0;
+    let x = 150.0 / GRAPHICS_TO_PHYSICS;
+    let y = 150.0 / GRAPHICS_TO_PHYSICS;
 
     let sprite_size = 10.0;
 
     commands
         .spawn_bundle(RigidBodyBundle {
-            position: Vec2::new(x / GRAPHICS_TO_PHYSICS, y / GRAPHICS_TO_PHYSICS).into(),
+            position: Vec2::new(x, y).into(),
             ..Default::default()
         })
         .insert_bundle(SpriteBundle {
@@ -40,7 +76,10 @@ fn spawn_player(mut commands: Commands) {
                 ..Default::default()
             },
             transform: Transform {
-                translation: Vec3::new(x, y, 2.0),
+                // `x` and `y` doesn't matter there because they will be
+                //  set by RigidBodyBundle
+                // We need set only `z` axis there
+                translation: Vec3::new(0.0, 0.0, 2.0),
                 ..Default::default()
             },
             ..Default::default()
