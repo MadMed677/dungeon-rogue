@@ -6,7 +6,6 @@ mod player;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_rapier2d::prelude::*;
 use camera::CameraPlugin;
 use debug::DebugPlugin;
 use map::MapPlugin;

@@ -15,7 +15,7 @@ pub struct WallBundle {
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(LdtkWorldBundle {
-        // ldtk_handle: asset_server.load("test.ldtk"),
+        // ldtk_handle: asset_server.load("top_down_map.ldtk"),
         ldtk_handle: asset_server.load("Typical_2D_platformer_example.ldtk"),
         ..Default::default()
     });
@@ -66,11 +66,11 @@ fn fit_camera_inside_current_level(
     };
 }
 
-fn spawn_wall_collision(
+fn _spawn_wall_collision(
     mut commands: Commands,
     map_query: Query<(Entity, &GridCoords, &Parent), Added<Wall>>,
 ) {
-    for (entity, grid_coords, parent) in map_query.iter() {
+    for (entity, grid_coords, _parent) in map_query.iter() {
         println!("Grid coords: {:?}", grid_coords);
 
         let collider = ColliderBundle {
@@ -88,7 +88,7 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(LdtkPlugin)
             .add_startup_system(setup)
-            .add_system(fit_camera_inside_current_level.after("movement"))
+            .add_system(fit_camera_inside_current_level)
             // .add_system(spawn_wall_collision)
             .insert_resource(LevelSelection::Index(0))
             .register_ldtk_int_cell::<WallBundle>(1);

@@ -134,12 +134,12 @@ fn player_collision(
     player_query: Query<&Transform, With<Player>>,
     wall_query: Query<(&GridCoords, &Parent), Added<Wall>>,
     parent_query: Query<&Parent, Without<Wall>>,
-    level_query: Query<(Entity, &Handle<LdtkLevel>)>,
+    _level_query: Query<(Entity, &Handle<LdtkLevel>)>,
     // levels: Res<Assets<LdtkLevel>>,
 ) {
     let player = player_query.get_single();
 
-    if let Ok(player_transform) = player {
+    if let Ok(_player_transform) = player {
         // for grid_coords in wall_query.iter() {
         //     if player_transform.translation.x as i32 == grid_coords.x
         //         && player_transform.translation.y as i32 == grid_coords.y
