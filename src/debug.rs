@@ -16,6 +16,6 @@ impl Plugin for DebugPlugin {
             .register_inspectable::<Speed>()
             .add_plugin(LogDiagnosticsPlugin::default())
             .add_plugin(FrameTimeDiagnosticsPlugin::default())
-            .add_plugin(RapierRenderPlugin);
+            .add_plugin(RapierDebugRenderPlugin::default());
     }
 }

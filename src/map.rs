@@ -67,18 +67,18 @@ fn fit_camera_inside_current_level(
 }
 
 fn _spawn_wall_collision(
-    mut commands: Commands,
+    mut _commands: Commands,
     map_query: Query<(Entity, &GridCoords, &Parent), Added<Wall>>,
 ) {
     for (entity, grid_coords, _parent) in map_query.iter() {
         println!("Grid coords: {:?}", grid_coords);
 
-        let collider = ColliderBundle {
-            shape: ColliderShape::cuboid(100.0, 0.1).into(),
-            ..Default::default()
-        };
+        // let collider = ColliderBundle {
+        //     shape: ColliderShape::cuboid(100.0, 0.1).into(),
+        //     ..Default::default()
+        // };
 
-        commands.entity(entity).insert_bundle(collider);
+        // commands.entity(entity).insert_bundle(collider);
     }
 }
 
