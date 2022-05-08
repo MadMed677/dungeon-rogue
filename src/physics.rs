@@ -12,6 +12,11 @@ impl Plugin for PhysicsPlugin {
         //  https://rapier.rs/docs/user_guides/bevy_plugin/common_mistakes#why-is-everything-moving-in-slow-motion
         app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
             PIXELS_PER_METER,
-        ));
+        ))
+        // Change gravity from -98.0 to -300.0
+        .insert_resource(RapierConfiguration {
+            gravity: Vec2::new(1.0, -300.0),
+            ..Default::default()
+        });
     }
 }

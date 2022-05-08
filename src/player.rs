@@ -36,13 +36,7 @@ fn spawn_floor(mut commands: Commands) {
         });
 }
 
-fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
-    // fn spawn_player(mut commands: Commands) {
-    // Set the gravity as zero
-    // rapier_config.gravity = Vec2::new(0.0, -200.0);
-    println!("gravity: {:?}", rapier_config.gravity);
-    rapier_config.gravity *= Vec2::new(1.0, 3.0);
-
+fn spawn_player(mut commands: Commands) {
     let x = 150.0;
     let y = 150.0;
 
@@ -56,7 +50,7 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
         .insert(Velocity::zero())
         .insert(ExternalImpulse::default())
         // .insert(Restitution::coefficient(1.0))
-        // .insert(Friction::new(0.9))
+        .insert(Friction::new(0.2))
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(3.0))
         .insert(ColliderMassProperties::Density(1.0))
