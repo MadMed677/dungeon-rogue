@@ -38,7 +38,8 @@ fn spawn_floor(mut commands: Commands) {
 fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
     // fn spawn_player(mut commands: Commands) {
     // Set the gravity as zero
-    rapier_config.gravity = Vec2::ZERO;
+    // rapier_config.gravity = Vec2::new(0.0, -200.0);
+    println!("gravity: {:?}", rapier_config.gravity);
 
     let x = 150.0;
     let y = 150.0;
@@ -50,8 +51,10 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
         .insert(RigidBody::Dynamic)
         .insert(Collider::cuboid(sprite_size / 2.0, sprite_size / 2.0))
         .insert(Velocity::zero())
-        .insert(Restitution::coefficient(0.7))
-        .insert(GravityScale(0.5))
+        // .insert(Restitution::coefficient(1.0))
+        // .insert(Friction::new(0.9))
+        .insert(GravityScale(3.0))
+        .insert(ColliderMassProperties::Density(1.0))
         .insert_bundle(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.7, 0.7, 0.7),
@@ -62,7 +65,7 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
             ..Default::default()
         })
         .insert(Player)
-        .insert(Speed(200.0));
+        .insert(Speed(120.0));
 }
 
 fn player_movement(
@@ -70,7 +73,6 @@ fn player_movement(
     mut query: Query<(&Speed, &mut Velocity), With<Player>>,
 ) {
     if let Ok((speed, mut velocity)) = query.get_single_mut() {
-        // Represent (x, y) coordinates
         let direction_x = if keyboard.pressed(KeyCode::Left) {
             -1.0
         } else if keyboard.pressed(KeyCode::Right) {
@@ -79,15 +81,8 @@ fn player_movement(
             0.0
         };
 
-        let direction_y = if keyboard.pressed(KeyCode::Up) {
-            1.0
-        } else if keyboard.pressed(KeyCode::Down) {
-            -1.0
-        } else {
-            0.0
-        };
+        let move_delta_x = direction_x * speed.0;
 
-        velocity.linvel = Vec2::new(direction_x * speed.0, direction_y * speed.0);
-        velocity.angvel = 0.0;
+        velocity.linvel.x = move_delta_x;
     }
 }
