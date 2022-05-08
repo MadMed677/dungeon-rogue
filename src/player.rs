@@ -13,7 +13,8 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(spawn_player)
             .add_startup_system(spawn_floor)
-            .add_system(player_movement);
+            .add_system(player_movement)
+            .add_system(player_jump);
     }
 }
 
@@ -40,6 +41,7 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
     // Set the gravity as zero
     // rapier_config.gravity = Vec2::new(0.0, -200.0);
     println!("gravity: {:?}", rapier_config.gravity);
+    rapier_config.gravity *= Vec2::new(1.0, 3.0);
 
     let x = 150.0;
     let y = 150.0;
@@ -50,9 +52,12 @@ fn spawn_player(mut commands: Commands, mut rapier_config: ResMut<RapierConfigur
         .spawn()
         .insert(RigidBody::Dynamic)
         .insert(Collider::cuboid(sprite_size / 2.0, sprite_size / 2.0))
+        // Add Velocity component to iterate via it but with zero value
         .insert(Velocity::zero())
+        .insert(ExternalImpulse::default())
         // .insert(Restitution::coefficient(1.0))
         // .insert(Friction::new(0.9))
+        .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(3.0))
         .insert(ColliderMassProperties::Density(1.0))
         .insert_bundle(SpriteBundle {
@@ -84,5 +89,16 @@ fn player_movement(
         let move_delta_x = direction_x * speed.0;
 
         velocity.linvel.x = move_delta_x;
+    }
+}
+
+fn player_jump(
+    keyboard: Res<Input<KeyCode>>,
+    mut player_query: Query<&mut ExternalImpulse, With<Player>>,
+) {
+    if let Ok(mut external_impulse) = player_query.get_single_mut() {
+        if keyboard.just_pressed(KeyCode::Space) {
+            external_impulse.impulse = Vec2::new(0.0, 10.0);
+        }
     }
 }
