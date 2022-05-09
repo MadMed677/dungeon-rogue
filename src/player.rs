@@ -7,12 +7,22 @@ use crate::{MovementDirection, MovementTendency, Speed, Sprites};
 #[derive(Component, Inspectable)]
 pub struct Player;
 
+#[derive(Component)]
+struct MovementAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
+/// Describes that entity on move or not
+struct OnMove(bool);
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player))
             .add_system(player_movement)
+            .add_system(player_movement_animation)
             .add_system(player_jump);
     }
 }
@@ -52,6 +62,10 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
         })
         .insert(MovementDirection(player_direction))
         .insert(Player)
+        .insert(MovementAnimation {
+            timer: Timer::from_seconds(0.1, true),
+        })
+        .insert(OnMove(false))
         .insert(Speed(120.0));
 }
 
@@ -59,7 +73,9 @@ fn player_movement(
     keyboard: Res<Input<KeyCode>>,
     mut query: Query<
         (
+            Entity,
             &Speed,
+            &mut OnMove,
             &mut MovementDirection,
             &mut TextureAtlasSprite,
             &mut Velocity,
@@ -67,7 +83,9 @@ fn player_movement(
         With<Player>,
     >,
 ) {
-    if let Ok((speed, mut direction, mut sprite, mut velocity)) = query.get_single_mut() {
+    if let Ok((player_entity, speed, mut on_move, mut direction, mut sprite, mut velocity)) =
+        query.get_single_mut()
+    {
         let direction_x = if keyboard.pressed(KeyCode::Left) {
             -1.0
         } else if keyboard.pressed(KeyCode::Right) {
@@ -80,6 +98,13 @@ fn player_movement(
 
         // Update player velocity
         velocity.linvel.x = move_delta_x;
+
+        // Change `OnMove` component
+        if move_delta_x > 0.0 || move_delta_x < 0.0 {
+            on_move.0 = true;
+        } else {
+            on_move.0 = false;
+        }
 
         // Change player direction
         if move_delta_x > 0.0 {
@@ -99,6 +124,43 @@ fn player_jump(
     if let Ok(mut external_impulse) = player_query.get_single_mut() {
         if keyboard.just_pressed(KeyCode::Space) {
             external_impulse.impulse = Vec2::new(0.0, 50.0);
+        }
+    }
+}
+
+fn player_movement_animation(
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    time: Res<Time>,
+    mut query: Query<
+        (
+            &OnMove,
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+            &mut MovementAnimation,
+        ),
+        With<Player>,
+    >,
+) {
+    for (on_move, mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
+        // If the player is not on move
+        //  set the first sprite which is equal to
+        //  player default state and do nothing
+        if on_move.0 == false {
+            sprite.index = 0;
+
+            return;
+        }
+
+        movement_animation.timer.tick(time.delta());
+
+        if movement_animation.timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            sprite.index += 1;
+
+            if sprite.index == texture_atlas.textures.len() {
+                // Loop the animation
+                sprite.index = 0;
+            }
         }
     }
 }
