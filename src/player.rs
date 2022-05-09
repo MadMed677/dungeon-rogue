@@ -12,28 +12,9 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player))
-            .add_startup_system(spawn_floor)
             .add_system(player_movement)
             .add_system(player_jump);
     }
-}
-
-fn spawn_floor(mut commands: Commands) {
-    let sprite_width = 200.0;
-    let sprite_height = 10.0;
-
-    commands
-        .spawn()
-        .insert(Collider::cuboid(sprite_width / 2.0, sprite_height / 2.0))
-        .insert_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(sprite_width, sprite_height)),
-                ..Default::default()
-            },
-            transform: Transform::from_xyz(400.0, 200.0, 2.0),
-            ..Default::default()
-        });
 }
 
 fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
@@ -58,6 +39,10 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: materials.player.clone(),
             transform: Transform::from_xyz(x, y, 3.0),
+            sprite: TextureAtlasSprite {
+                flip_x: false,
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert(Player)
@@ -89,7 +74,7 @@ fn player_jump(
 ) {
     if let Ok(mut external_impulse) = player_query.get_single_mut() {
         if keyboard.just_pressed(KeyCode::Space) {
-            external_impulse.impulse = Vec2::new(0.0, 30.0);
+            external_impulse.impulse = Vec2::new(0.0, 50.0);
         }
     }
 }
