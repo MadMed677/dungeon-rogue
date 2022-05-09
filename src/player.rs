@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::{Speed, Sprites};
+use crate::{MovementDirection, MovementTendency, Speed, Sprites};
 
 #[derive(Component, Inspectable)]
 pub struct Player;
@@ -36,10 +36,12 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(3.0))
         .insert(ColliderMassProperties::Density(1.0))
+        .insert(MovementDirection(MovementTendency::Right))
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: materials.player.clone(),
             transform: Transform::from_xyz(x, y, 3.0),
             sprite: TextureAtlasSprite {
+                // Should be the same as `MovementDirection`
                 flip_x: false,
                 ..Default::default()
             },
@@ -51,9 +53,17 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
 
 fn player_movement(
     keyboard: Res<Input<KeyCode>>,
-    mut query: Query<(&Speed, &mut Velocity), With<Player>>,
+    mut query: Query<
+        (
+            &Speed,
+            &mut MovementDirection,
+            &mut TextureAtlasSprite,
+            &mut Velocity,
+        ),
+        With<Player>,
+    >,
 ) {
-    if let Ok((speed, mut velocity)) = query.get_single_mut() {
+    if let Ok((speed, mut direction, mut sprite, mut velocity)) = query.get_single_mut() {
         let direction_x = if keyboard.pressed(KeyCode::Left) {
             -1.0
         } else if keyboard.pressed(KeyCode::Right) {
@@ -64,7 +74,17 @@ fn player_movement(
 
         let move_delta_x = direction_x * speed.0;
 
+        // Update player velocity
         velocity.linvel.x = move_delta_x;
+
+        // Change player direction
+        if move_delta_x > 0.0 {
+            direction.0 = MovementTendency::Right;
+            sprite.flip_x = false;
+        } else if move_delta_x < 0.0 {
+            direction.0 = MovementTendency::Left;
+            sprite.flip_x = true;
+        }
     }
 }
 

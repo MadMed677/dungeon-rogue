@@ -15,6 +15,15 @@ use player::PlayerPlugin;
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
 
+#[derive(Inspectable)]
+enum MovementTendency {
+    Left,
+    Right,
+}
+
+#[derive(Component, Inspectable)]
+pub struct MovementDirection(MovementTendency);
+
 struct Sprites {
     player: Handle<TextureAtlas>,
 }
