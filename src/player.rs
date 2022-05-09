@@ -24,6 +24,8 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
     let sprite_width = 16.0;
     let sprite_height = 32.0;
 
+    let player_direction = MovementTendency::Right;
+
     commands
         .spawn()
         .insert(RigidBody::Dynamic)
@@ -36,17 +38,19 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(3.0))
         .insert(ColliderMassProperties::Density(1.0))
-        .insert(MovementDirection(MovementTendency::Right))
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: materials.player.clone(),
             transform: Transform::from_xyz(x, y, 3.0),
             sprite: TextureAtlasSprite {
-                // Should be the same as `MovementDirection`
-                flip_x: false,
+                flip_x: match &player_direction {
+                    MovementTendency::Left => true,
+                    MovementTendency::Right => false,
+                },
                 ..Default::default()
             },
             ..Default::default()
         })
+        .insert(MovementDirection(player_direction))
         .insert(Player)
         .insert(Speed(120.0));
 }
