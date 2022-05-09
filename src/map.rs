@@ -7,11 +7,21 @@ use bevy_rapier2d::prelude::*;
 
 use crate::player::Player;
 
+enum CollisionId {
+    Dirt = 1,
+    Ladder = 2,
+    Stone = 3,
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component, Inspectable)]
 pub struct Wall;
 
 #[derive(Clone, Debug, Default, Bundle, LdtkIntCell)]
-pub struct WallBundle {
+pub struct DirtBundle {
+    pub wall: Wall,
+}
+#[derive(Clone, Debug, Default, Bundle, LdtkIntCell)]
+pub struct StoneBundle {
     pub wall: Wall,
 }
 
@@ -208,7 +218,7 @@ impl Plugin for MapPlugin {
             .add_system(fit_camera_inside_current_level)
             .add_system(spawn_wall_collision)
             .insert_resource(LevelSelection::Index(0))
-            .register_ldtk_int_cell::<WallBundle>(1)
-            .register_ldtk_int_cell::<WallBundle>(3);
+            .register_ldtk_int_cell::<DirtBundle>(CollisionId::Dirt as i32)
+            .register_ldtk_int_cell::<StoneBundle>(CollisionId::Stone as i32);
     }
 }

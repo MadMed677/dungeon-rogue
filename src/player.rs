@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::Speed;
+use crate::{Speed, Sprites};
 
 #[derive(Component, Inspectable)]
 pub struct Player;
@@ -11,7 +11,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn_player)
+        app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player))
             .add_startup_system(spawn_floor)
             .add_system(player_movement)
             .add_system(player_jump);
@@ -36,30 +36,27 @@ fn spawn_floor(mut commands: Commands) {
         });
 }
 
-fn spawn_player(mut commands: Commands) {
+fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
     let x = 150.0;
     let y = 150.0;
 
-    let sprite_size = 10.0;
+    let sprite_width = 16.0;
+    let sprite_height = 32.0;
 
     commands
         .spawn()
         .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(sprite_size / 2.0, sprite_size / 2.0))
+        .insert(Collider::cuboid(sprite_width / 2.0, sprite_height / 2.0))
         // Add Velocity component to iterate via it but with zero value
         .insert(Velocity::zero())
         .insert(ExternalImpulse::default())
         // .insert(Restitution::coefficient(1.0))
-        .insert(Friction::new(0.2))
+        .insert(Friction::new(0.1))
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(3.0))
         .insert(ColliderMassProperties::Density(1.0))
-        .insert_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.7, 0.7, 0.7),
-                custom_size: Some(Vec2::new(sprite_size, sprite_size)),
-                ..Default::default()
-            },
+        .insert_bundle(SpriteSheetBundle {
+            texture_atlas: materials.player.clone(),
             transform: Transform::from_xyz(x, y, 3.0),
             ..Default::default()
         })
@@ -92,7 +89,7 @@ fn player_jump(
 ) {
     if let Ok(mut external_impulse) = player_query.get_single_mut() {
         if keyboard.just_pressed(KeyCode::Space) {
-            external_impulse.impulse = Vec2::new(0.0, 10.0);
+            external_impulse.impulse = Vec2::new(0.0, 30.0);
         }
     }
 }
