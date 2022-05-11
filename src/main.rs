@@ -1,13 +1,15 @@
-mod camera;
 mod debug;
+mod ldtk;
 mod map;
 mod physics;
 mod player;
 
+use std::collections::HashSet;
+
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use camera::CameraPlugin;
 use debug::DebugPlugin;
+use ldtk::GameLdtkPlugin;
 use map::MapPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
@@ -23,6 +25,25 @@ enum MovementTendency {
 
 #[derive(Component, Inspectable)]
 pub struct MovementDirection(MovementTendency);
+
+#[derive(Component, Copy, Clone, Debug, Default)]
+/// Describes that this element
+///  might be used for `Climber` entities
+pub struct Climbable;
+
+#[derive(Component, Clone, Debug, Default)]
+/// Describes that this entity
+///  may interact with `Climbable` elements
+pub struct Climber {
+    /// Describes that climber faced intersection with
+    ///  `Climbable` element and it's ready to climb
+    /// Contains a list of all intersaction elements
+    ///  which the Climber has a contact with
+    intersaction_elements: HashSet<Entity>,
+
+    // Describes that climber is in climbing process
+    climbing: bool,
+}
 
 struct Sprites {
     player: Handle<TextureAtlas>,
@@ -53,9 +74,9 @@ fn main() {
         })
         .add_startup_system(setup)
         .add_plugins(DefaultPlugins)
+        .add_plugin(GameLdtkPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
-        .add_plugin(CameraPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(DebugPlugin)
         .run();

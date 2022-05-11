@@ -1,10 +1,13 @@
+use std::collections::HashSet;
+
 use bevy::prelude::*;
+use bevy_ecs_ldtk::{prelude::RegisterLdtkObjects, EntityInstance, LdtkEntity, Worldly};
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::{MovementDirection, MovementTendency, Speed, Sprites};
+use crate::{Climbable, Climber, MovementDirection, MovementTendency, Speed, Sprites};
 
-#[derive(Component, Inspectable)]
+#[derive(Component, Default, Inspectable)]
 pub struct Player;
 
 #[derive(Component)]
@@ -16,6 +19,22 @@ struct MovementAnimation {
 /// Describes that entity on move or not
 struct OnMove(bool);
 
+#[derive(Bundle, LdtkEntity)]
+struct PlayerBundle {
+    pub player: Player,
+    pub climber: Climber,
+
+    #[sprite_bundle("atlas/pumpkin_dude.png")]
+    #[bundle]
+    pub sprite_bundle: SpriteBundle,
+
+    #[worldly]
+    pub worldly: Worldly,
+
+    #[from_entity_instance]
+    entity_instance: EntityInstance,
+}
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -23,13 +42,21 @@ impl Plugin for PlayerPlugin {
         app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player))
             .add_system(player_movement)
             .add_system(player_movement_animation)
-            .add_system(player_jump);
+            .add_system(player_jump)
+            .add_system(detect_climb)
+            .add_system(debug_player_position)
+            .add_system(ignore_gravity_during_climbing)
+            .register_ldtk_entity::<PlayerBundle>("Player");
     }
 }
 
 fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
+    return;
+
     let x = 150.0;
     let y = 150.0;
+    // let x = 0.0;
+    // let y = 0.0;
 
     let sprite_width = 16.0;
     let sprite_height = 32.0;
@@ -39,7 +66,12 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
     commands
         .spawn()
         .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(sprite_width / 2.0, sprite_height / 2.0))
+        .insert(Collider::cuboid(
+            // Make the rigid body a little bit smaller
+            //  to be fit on the map
+            sprite_width / 2.0 - 2.0,
+            sprite_height / 2.0,
+        ))
         // Add Velocity component to iterate via it but with zero value
         .insert(Velocity::zero())
         .insert(ExternalImpulse::default())
@@ -50,7 +82,13 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
         .insert(ColliderMassProperties::Density(1.0))
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: materials.player.clone(),
-            transform: Transform::from_xyz(x, y, 3.0),
+            transform: Transform {
+                translation: Vec3::new(x, y, 4.0),
+                // scale: Vec3::new(0.9, 0.9, 1.0),
+                scale: Vec3::new(1.0, 1.0, 1.0),
+                ..Default::default()
+            },
+            // transform: Transform::from_xyz(x, y, 3.0),
             sprite: TextureAtlasSprite {
                 flip_x: match &player_direction {
                     MovementTendency::Left => true,
@@ -66,16 +104,24 @@ fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
             timer: Timer::from_seconds(0.1, true),
         })
         .insert(OnMove(false))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(Climber {
+            intersaction_elements: HashSet::new(),
+            climbing: false,
+        })
         .insert(Speed(120.0));
 }
 
+/// System which manipulates with
+///  moving to left / right (change `x` velocity)
+///  climbing (change `y` velocity)
 fn player_movement(
     keyboard: Res<Input<KeyCode>>,
     mut query: Query<
         (
-            Entity,
             &Speed,
             &mut OnMove,
+            &mut Climber,
             &mut MovementDirection,
             &mut TextureAtlasSprite,
             &mut Velocity,
@@ -83,9 +129,10 @@ fn player_movement(
         With<Player>,
     >,
 ) {
-    if let Ok((player_entity, speed, mut on_move, mut direction, mut sprite, mut velocity)) =
+    if let Ok((speed, mut on_move, mut climber, mut direction, mut sprite, mut velocity)) =
         query.get_single_mut()
     {
+        /* Moving logic */
         let direction_x = if keyboard.pressed(KeyCode::Left) {
             -1.0
         } else if keyboard.pressed(KeyCode::Right) {
@@ -114,16 +161,36 @@ fn player_movement(
             direction.0 = MovementTendency::Left;
             sprite.flip_x = true;
         }
+
+        /* Climbing logic */
+        if climber.intersaction_elements.is_empty() {
+            climber.climbing = false;
+        } else if keyboard.just_pressed(KeyCode::Up) || keyboard.just_pressed(KeyCode::Down) {
+            climber.climbing = true;
+        }
+
+        if climber.climbing {
+            let direction_y = if keyboard.pressed(KeyCode::Up) {
+                1.0
+            } else if keyboard.pressed(KeyCode::Down) {
+                -1.0
+            } else {
+                0.0
+            };
+
+            velocity.linvel.y = direction_y * speed.0;
+        }
     }
 }
 
 fn player_jump(
     keyboard: Res<Input<KeyCode>>,
-    mut player_query: Query<&mut ExternalImpulse, With<Player>>,
+    mut player_query: Query<(&mut ExternalImpulse, &mut Climber), With<Player>>,
 ) {
-    if let Ok(mut external_impulse) = player_query.get_single_mut() {
+    if let Ok((mut external_impulse, mut climber)) = player_query.get_single_mut() {
         if keyboard.just_pressed(KeyCode::Space) {
             external_impulse.impulse = Vec2::new(0.0, 50.0);
+            climber.climbing = false;
         }
     }
 }
@@ -162,5 +229,62 @@ fn player_movement_animation(
                 sprite.index = 0;
             }
         }
+    }
+}
+
+fn detect_climb(
+    mut climbers: Query<&mut Climber>,
+    climbables: Query<&Climbable>,
+    mut collisions: EventReader<CollisionEvent>,
+) {
+    for collision in collisions.iter() {
+        match collision {
+            CollisionEvent::Started(collider_a, collider_b, _) => {
+                if let Ok(mut climber) = climbers.get_mut(*collider_a) {
+                    if climbables.get(*collider_b).is_ok() {
+                        climber.intersaction_elements.insert(*collider_b);
+                    }
+                }
+
+                if let Ok(mut climber) = climbers.get_mut(*collider_b) {
+                    if climbables.get(*collider_a).is_ok() {
+                        climber.intersaction_elements.insert(*collider_a);
+                    }
+                }
+            }
+            CollisionEvent::Stopped(collider_a, collider_b, _) => {
+                if let Ok(mut climber) = climbers.get_mut(*collider_a) {
+                    if climbables.get(*collider_b).is_ok() {
+                        climber.intersaction_elements.remove(collider_b);
+                    }
+                }
+
+                if let Ok(mut climber) = climbers.get_mut(*collider_b) {
+                    if climbables.get(*collider_a).is_ok() {
+                        climber.intersaction_elements.remove(collider_a);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn ignore_gravity_during_climbing(
+    mut query: Query<(&mut GravityScale, &Climber), Changed<Climber>>,
+) {
+    for (mut gravity, climber) in query.iter_mut() {
+        if climber.climbing {
+            gravity.0 = 0.0;
+        } else {
+            gravity.0 = 3.0;
+        }
+    }
+}
+
+fn debug_player_position(player_position: Query<&Transform, With<Player>>) {
+    let player_position = player_position.get_single();
+
+    if let Ok(player_position) = player_position {
+        println!("Player position: {:?}", player_position.translation);
     }
 }

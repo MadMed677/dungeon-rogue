@@ -5,7 +5,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::player::Player;
+use crate::{player::Player, Climbable};
 
 enum CollisionId {
     Dirt = 1,
@@ -25,12 +25,53 @@ pub struct StoneBundle {
     pub wall: Wall,
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(LdtkWorldBundle {
-        // ldtk_handle: asset_server.load("top_down_map.ldtk"),
-        ldtk_handle: asset_server.load("Typical_2D_platformer_example.ldtk"),
-        ..Default::default()
-    });
+#[derive(Clone, Bundle)]
+pub struct ColliderBundle {
+    pub collider: Collider,
+    pub sensor: Sensor,
+    // pub rigid_body: RigidBody,
+}
+
+impl Default for ColliderBundle {
+    fn default() -> Self {
+        Self {
+            collider: Collider::cuboid(2.0, 2.0),
+            sensor: Sensor(false),
+            // rigid_body: Default::default(),
+        }
+    }
+}
+
+impl From<EntityInstance> for ColliderBundle {
+    fn from(_: EntityInstance) -> Self {
+        Self {
+            collider: Collider::cuboid(2.0, 2.0),
+            sensor: Sensor(false),
+            // rigid_body: RigidBody::Fixed,
+        }
+    }
+}
+
+impl From<IntGridCell> for ColliderBundle {
+    fn from(int_grid_cell: IntGridCell) -> Self {
+        if int_grid_cell.value == CollisionId::Ladder as i32 {
+            Self {
+                collider: Collider::cuboid(8.0, 8.0),
+                sensor: Sensor(true),
+                // rigid_body: RigidBody::Dynamic,
+            }
+        } else {
+            unimplemented!();
+        }
+    }
+}
+
+#[derive(Clone, Bundle, LdtkIntCell)]
+pub struct LadderBundle {
+    #[from_int_grid_cell]
+    #[bundle]
+    pub collider_bundle: ColliderBundle,
+    pub climbable: Climbable,
 }
 
 const ASPECT_RATIO: f32 = 16.0 / 9.0;
@@ -42,6 +83,7 @@ fn fit_camera_inside_current_level(
         (Without<OrthographicProjection>, Without<Player>),
     >,
     player_query: Query<&Transform, With<Player>>,
+    level_selection: Res<LevelSelection>,
     ldtk_levels: Res<Assets<LdtkLevel>>,
 ) {
     // Get player transform to handle `position`
@@ -52,27 +94,40 @@ fn fit_camera_inside_current_level(
         for (level_transform, level_handle) in level_query.iter() {
             if let Some(ldtk_level) = ldtk_levels.get(level_handle) {
                 let level = &ldtk_level.level;
-                let level_ratio = level.px_wid as f32 / level.px_hei as f32;
 
-                orthographic_projection.scaling_mode = bevy::render::camera::ScalingMode::None;
-                orthographic_projection.bottom = 0.0;
-                orthographic_projection.left = 0.0;
+                // Check the specific current level
+                if level_selection.is_match(&0, level) {
+                    let level_ratio = level.px_wid as f32 / level.px_hei as f32;
 
-                // If the level is wider than the screen
-                if level_ratio > ASPECT_RATIO {
-                    orthographic_projection.top = (level.px_hei as f32 / 9.0).round() * 9.0;
-                    orthographic_projection.right = orthographic_projection.top * ASPECT_RATIO;
+                    orthographic_projection.scaling_mode = bevy::render::camera::ScalingMode::None;
+                    orthographic_projection.bottom = 0.0;
+                    orthographic_projection.left = 0.0;
 
-                    // Update camera translation
-                    camera_transform.translation.x = (player_translation.x
-                        - level_transform.translation.x
-                        - orthographic_projection.right / 2.0)
-                        .clamp(0.0, level.px_wid as f32 - orthographic_projection.right);
-                    camera_transform.translation.y = 0.0;
+                    // If the level is wider than the screen
+                    if level_ratio > ASPECT_RATIO {
+                        orthographic_projection.top = (level.px_hei as f32 / 9.0).round() * 9.0;
+                        orthographic_projection.right = orthographic_projection.top * ASPECT_RATIO;
+
+                        // Update camera translation
+                        camera_transform.translation.x = (player_translation.x
+                            - level_transform.translation.x
+                            - orthographic_projection.right / 2.0)
+                            .clamp(0.0, level.px_wid as f32 - orthographic_projection.right);
+                        camera_transform.translation.y = 0.0;
+                    } else {
+                        // If the level is taller than the screen
+                        orthographic_projection.right = (level.px_wid as f32 / 16.).round() * 16.;
+                        orthographic_projection.top = orthographic_projection.right / ASPECT_RATIO;
+                        camera_transform.translation.y = (player_translation.y
+                            - level_transform.translation.y
+                            - orthographic_projection.top / 2.)
+                            .clamp(0., level.px_hei as f32 - orthographic_projection.top);
+                        camera_transform.translation.x = 0.;
+                    }
+
+                    camera_transform.translation.x += level_transform.translation.x;
+                    camera_transform.translation.y += level_transform.translation.y;
                 }
-
-                // camera_transform.translation.x += level_transform.translation.x;
-                // camera_transform.translation.y += level_transform.translation.x;
             }
         }
     };
@@ -209,16 +264,85 @@ fn spawn_wall_collision(
     }
 }
 
+fn update_level_selection(
+    level_query: Query<(&Handle<LdtkLevel>, &Transform), Without<Player>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
+    mut level_selection: ResMut<LevelSelection>,
+    ldtk_levels: Res<Assets<LdtkLevel>>,
+) {
+    for (level_handle, level_transform) in level_query.iter() {
+        if let Some(ldtk_level) = ldtk_levels.get(level_handle) {
+            let level_bounds = Rect {
+                bottom: level_transform.translation.y,
+                top: level_transform.translation.y + ldtk_level.level.px_hei as f32,
+                left: level_transform.translation.x,
+                right: level_transform.translation.x + ldtk_level.level.px_wid as f32,
+            };
+
+            for mut player_transform in player_query.iter_mut() {
+                // println!("level bounds: {:?}", level_bounds);
+                // println!(
+                //     "player_transform: x {} y {}",
+                //     &player_transform.translation.x, &player_transform.translation.y
+                // );
+
+                if player_transform.translation.x < level_bounds.right
+                    && player_transform.translation.x > level_bounds.left
+                    && player_transform.translation.y < level_bounds.top
+                    && player_transform.translation.y > level_bounds.bottom
+                    && !level_selection.is_match(&0, &ldtk_level.level)
+                {
+                    println!("In the level");
+                    *level_selection = LevelSelection::Iid(ldtk_level.level.iid.clone());
+                }
+
+                // if player_transform.translation.y > level_bounds.top
+                //     || player_transform.translation.y < level_bounds.bottom
+                // {
+                //     println!("Out of the level! {}", ldtk_level.level.uid);
+                //     println!(
+                //         "Is match! {}",
+                //         level_selection.is_match(&0, &ldtk_level.level)
+                //     );
+                //     *level_selection = LevelSelection::Uid(88);
+                // }
+            }
+        }
+    }
+}
+
+/// During loading the map we should pause the physics
+///  to avoid the situation when user may fall from the
+///  ground because the ground is not loaded yet
+///
+/// To avoid this type of bugs we have to deactivate
+///  the physics pipeline when we have an event
+///  of rendering the map and turn it on when
+///  the map has been loaded
+fn pause_physics_during_map_load(
+    mut level_events: EventReader<LevelEvent>,
+    mut rapier_config: ResMut<RapierConfiguration>,
+) {
+    for event in level_events.iter() {
+        match event {
+            LevelEvent::SpawnTriggered(_) => rapier_config.physics_pipeline_active = false,
+            LevelEvent::Transformed(_) => rapier_config.physics_pipeline_active = true,
+            _ => (),
+        }
+    }
+}
+
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(LdtkPlugin)
-            .add_startup_system(setup)
-            .add_system(fit_camera_inside_current_level)
+        app.add_system(fit_camera_inside_current_level)
+            .add_system(pause_physics_during_map_load)
             .add_system(spawn_wall_collision)
-            .insert_resource(LevelSelection::Index(0))
+            .add_system(update_level_selection)
+            .insert_resource(LevelSelection::Uid(0))
             .register_ldtk_int_cell::<DirtBundle>(CollisionId::Dirt as i32)
+            .register_ldtk_int_cell::<LadderBundle>(CollisionId::Ladder as i32)
             .register_ldtk_int_cell::<StoneBundle>(CollisionId::Stone as i32);
     }
 }
