@@ -17,13 +17,25 @@ use player::PlayerPlugin;
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
 
+impl Default for Speed {
+    fn default() -> Self {
+        Self(50.0)
+    }
+}
+
 #[derive(Inspectable)]
 enum MovementTendency {
     Left,
     Right,
 }
 
-#[derive(Component, Inspectable)]
+impl Default for MovementTendency {
+    fn default() -> Self {
+        Self::Right
+    }
+}
+
+#[derive(Component, Default, Inspectable)]
 pub struct MovementDirection(MovementTendency);
 
 #[derive(Component, Copy, Clone, Debug, Default)]
@@ -54,6 +66,8 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+
     let texture_handle = asset_server.load("atlas/pumpkin_dude.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(16.0, 32.0), 4, 1);
 

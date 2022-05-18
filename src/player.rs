@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use bevy::prelude::*;
-use bevy_ecs_ldtk::{prelude::RegisterLdtkObjects, EntityInstance, LdtkEntity, Worldly};
+use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
@@ -15,19 +15,17 @@ struct MovementAnimation {
     timer: Timer,
 }
 
-#[derive(Component)]
+#[derive(Component, Default, Inspectable)]
 /// Describes that entity on move or not
 struct OnMove(bool);
 
 #[derive(Bundle, LdtkEntity)]
 struct PlayerBundle {
     pub player: Player,
-    pub climber: Climber,
 
-    #[sprite_bundle("atlas/pumpkin_dude.png")]
-    #[bundle]
-    pub sprite_bundle: SpriteBundle,
-
+    // #[sprite_sheet_bundle]
+    // #[bundle]
+    // pub sprite_bundle: SpriteSheetBundle,
     #[worldly]
     pub worldly: Worldly,
 
@@ -39,77 +37,94 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player))
+        // app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player_2))
+        app.add_system(spawn_player)
             .add_system(player_movement)
             .add_system(player_movement_animation)
             .add_system(player_jump)
             .add_system(detect_climb)
-            .add_system(debug_player_position)
             .add_system(ignore_gravity_during_climbing)
+            .add_startup_system(spawn_debug_floor)
             .register_ldtk_entity::<PlayerBundle>("Player");
     }
 }
 
-fn spawn_player(mut commands: Commands, materials: Res<Sprites>) {
-    return;
-
-    let x = 150.0;
-    let y = 150.0;
-    // let x = 0.0;
-    // let y = 0.0;
-
-    let sprite_width = 16.0;
-    let sprite_height = 32.0;
-
-    let player_direction = MovementTendency::Right;
-
+fn spawn_debug_floor(mut commands: Commands) {
     commands
         .spawn()
-        .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(
-            // Make the rigid body a little bit smaller
-            //  to be fit on the map
-            sprite_width / 2.0 - 2.0,
-            sprite_height / 2.0,
-        ))
-        // Add Velocity component to iterate via it but with zero value
-        .insert(Velocity::zero())
-        .insert(ExternalImpulse::default())
-        // .insert(Restitution::coefficient(1.0))
-        .insert(Friction::new(0.1))
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(GravityScale(3.0))
-        .insert(ColliderMassProperties::Density(1.0))
-        .insert_bundle(SpriteSheetBundle {
-            texture_atlas: materials.player.clone(),
-            transform: Transform {
-                translation: Vec3::new(x, y, 4.0),
-                // scale: Vec3::new(0.9, 0.9, 1.0),
-                scale: Vec3::new(1.0, 1.0, 1.0),
+        .insert_bundle(SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(0.7, 0.7, 0.7),
+                custom_size: Some(Vec2::new(600.0, 10.0)),
                 ..Default::default()
             },
-            // transform: Transform::from_xyz(x, y, 3.0),
-            sprite: TextureAtlasSprite {
-                flip_x: match &player_direction {
-                    MovementTendency::Left => true,
-                    MovementTendency::Right => false,
-                },
-                ..Default::default()
-            },
+            transform: Transform::from_xyz(0.0, 0.0, 20.0),
             ..Default::default()
         })
-        .insert(MovementDirection(player_direction))
-        .insert(Player)
-        .insert(MovementAnimation {
-            timer: Timer::from_seconds(0.1, true),
-        })
-        .insert(OnMove(false))
-        .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(Climber {
-            intersaction_elements: HashSet::new(),
-            climbing: false,
-        })
-        .insert(Speed(120.0));
+        // .insert(Transform::from_xyz(190.0, 400.0, 20.0))
+        .insert(Collider::cuboid(300.0, 5.0));
+}
+
+fn spawn_player(
+    mut commands: Commands,
+    materials: Res<Sprites>,
+    player_query: Query<(Entity, &Transform), Added<Player>>,
+) {
+    if let Ok((player_entity, transform)) = player_query.get_single() {
+        let sprite_width = 16.0;
+        let sprite_height = 32.0;
+
+        let player_direction = MovementTendency::Right;
+
+        println!("Scale: {:?}", transform.scale);
+
+        commands
+            .entity(player_entity)
+            .insert(RigidBody::Dynamic)
+            .insert(Collider::cuboid(
+                // Make the rigid body a little bit smaller
+                //  to be fit on the map
+                sprite_width / 2.0,
+                sprite_height / 2.0,
+            ))
+            // Add Velocity component to iterate via it but with zero value
+            .insert(Velocity::zero())
+            .insert(ExternalImpulse::default())
+            .insert(Friction::new(0.01))
+            .insert(LockedAxes::ROTATION_LOCKED)
+            .insert(GravityScale(3.0))
+            .insert(ColliderMassProperties::Density(1.0))
+            .insert_bundle(SpriteSheetBundle {
+                texture_atlas: materials.player.clone(),
+                // Take the Wordly coordinates to place
+                // spritesheet correctly
+                transform: Transform {
+                    translation: transform.translation,
+                    rotation: transform.rotation,
+                    // scale: transform.scale,
+                    scale: Vec3::new(0.8, 0.8, 1.0),
+                },
+                sprite: TextureAtlasSprite {
+                    flip_x: match &player_direction {
+                        MovementTendency::Left => true,
+                        MovementTendency::Right => false,
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(MovementDirection(player_direction))
+            .insert(MovementAnimation {
+                timer: Timer::from_seconds(0.1, true),
+            })
+            .insert(OnMove(false))
+            .insert(ActiveEvents::COLLISION_EVENTS)
+            .insert(Climber {
+                intersaction_elements: HashSet::new(),
+                climbing: false,
+            })
+            .insert(Speed(120.0));
+    }
 }
 
 /// System which manipulates with
@@ -189,7 +204,7 @@ fn player_jump(
 ) {
     if let Ok((mut external_impulse, mut climber)) = player_query.get_single_mut() {
         if keyboard.just_pressed(KeyCode::Space) {
-            external_impulse.impulse = Vec2::new(0.0, 50.0);
+            external_impulse.impulse = Vec2::new(0.0, 40.0);
             climber.climbing = false;
         }
     }
@@ -278,13 +293,5 @@ fn ignore_gravity_during_climbing(
         } else {
             gravity.0 = 3.0;
         }
-    }
-}
-
-fn debug_player_position(player_position: Query<&Transform, With<Player>>) {
-    let player_position = player_position.get_single();
-
-    if let Ok(player_position) = player_position {
-        println!("Player position: {:?}", player_position.translation);
     }
 }

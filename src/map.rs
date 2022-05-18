@@ -257,6 +257,7 @@ fn spawn_wall_collision(
                             0.0,
                         ))
                         .insert(GlobalTransform::default())
+                        .insert(WallCollision)
                         .insert(Parent(level_entity));
                 }
             }
@@ -264,9 +265,12 @@ fn spawn_wall_collision(
     }
 }
 
+#[derive(Component)]
+pub struct WallCollision;
+
 fn update_level_selection(
     level_query: Query<(&Handle<LdtkLevel>, &Transform), Without<Player>>,
-    mut player_query: Query<&mut Transform, With<Player>>,
+    player_query: Query<&Transform, With<Player>>,
     mut level_selection: ResMut<LevelSelection>,
     ldtk_levels: Res<Assets<LdtkLevel>>,
 ) {
@@ -279,7 +283,7 @@ fn update_level_selection(
                 right: level_transform.translation.x + ldtk_level.level.px_wid as f32,
             };
 
-            for mut player_transform in player_query.iter_mut() {
+            for player_transform in player_query.iter() {
                 // println!("level bounds: {:?}", level_bounds);
                 // println!(
                 //     "player_transform: x {} y {}",
@@ -340,7 +344,6 @@ impl Plugin for MapPlugin {
             .add_system(pause_physics_during_map_load)
             .add_system(spawn_wall_collision)
             .add_system(update_level_selection)
-            .insert_resource(LevelSelection::Uid(0))
             .register_ldtk_int_cell::<DirtBundle>(CollisionId::Dirt as i32)
             .register_ldtk_int_cell::<LadderBundle>(CollisionId::Ladder as i32)
             .register_ldtk_int_cell::<StoneBundle>(CollisionId::Stone as i32);
