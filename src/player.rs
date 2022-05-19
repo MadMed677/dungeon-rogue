@@ -76,8 +76,6 @@ fn spawn_player(
 
         let player_direction = MovementTendency::Right;
 
-        println!("Scale: {:?}", transform.scale);
-
         commands
             .entity(player_entity)
             .insert(RigidBody::Dynamic)

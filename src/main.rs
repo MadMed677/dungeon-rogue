@@ -86,9 +86,9 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
-        .add_startup_system(setup)
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
+        .add_startup_system(setup)
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)

@@ -9,6 +9,8 @@ use crate::map::WallCollision;
 use crate::player::Player;
 use crate::Speed;
 
+use rand::{thread_rng, Rng};
+
 pub struct DebugPlugin;
 
 #[derive(Inspectable, Default)]
@@ -36,17 +38,24 @@ impl Plugin for DebugPlugin {
 ///  the collision to be able to debug it
 fn debug_collisions(
     mut commands: Commands,
-    wall_colliders: Query<(Entity, &Collider, &RigidBody, &Transform), Added<WallCollision>>,
+    wall_colliders: Query<(Entity, &Collider, &GlobalTransform), Added<WallCollision>>,
     player_collider: Query<(Entity, &Collider, &Transform), With<Player>>,
 ) {
     // Show debug layer for the walls
-    for (entity, collider, _, transform) in wall_colliders.iter() {
+    for (entity, collider, transform) in wall_colliders.iter() {
         let half_sizes = collider.as_cuboid().unwrap().half_extents();
         let full_sizes = half_sizes * 2.0;
 
+        let mut rng = thread_rng();
+
+        // Make different colors for different colliders
+        let red = rng.gen_range(0.0..1.0);
+        let green = rng.gen_range(0.0..1.0);
+        let blue = rng.gen_range(0.0..1.0);
+
         commands.entity(entity).insert_bundle(SpriteBundle {
             sprite: Sprite {
-                color: Color::rgba(0.5, 0.5, 0.5, 0.5),
+                color: Color::rgba(red, green, blue, 0.5),
                 custom_size: Some(full_sizes),
                 ..Default::default()
             },

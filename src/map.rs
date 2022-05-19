@@ -284,32 +284,14 @@ fn update_level_selection(
             };
 
             for player_transform in player_query.iter() {
-                // println!("level bounds: {:?}", level_bounds);
-                // println!(
-                //     "player_transform: x {} y {}",
-                //     &player_transform.translation.x, &player_transform.translation.y
-                // );
-
                 if player_transform.translation.x < level_bounds.right
                     && player_transform.translation.x > level_bounds.left
                     && player_transform.translation.y < level_bounds.top
                     && player_transform.translation.y > level_bounds.bottom
                     && !level_selection.is_match(&0, &ldtk_level.level)
                 {
-                    println!("In the level");
                     *level_selection = LevelSelection::Iid(ldtk_level.level.iid.clone());
                 }
-
-                // if player_transform.translation.y > level_bounds.top
-                //     || player_transform.translation.y < level_bounds.bottom
-                // {
-                //     println!("Out of the level! {}", ldtk_level.level.uid);
-                //     println!(
-                //         "Is match! {}",
-                //         level_selection.is_match(&0, &ldtk_level.level)
-                //     );
-                //     *level_selection = LevelSelection::Uid(88);
-                // }
             }
         }
     }
