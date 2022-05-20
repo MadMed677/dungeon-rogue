@@ -26,6 +26,7 @@ impl Plugin for DebugPlugin {
             app.add_plugin(InspectorPlugin::<Inspector>::new())
                 .register_inspectable::<Player>()
                 .register_inspectable::<Speed>()
+                .register_inspectable::<Name>()
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())
                 .add_system_to_stage(DEBUG, debug_collisions)
                 .add_plugin(LogDiagnosticsPlugin::default())

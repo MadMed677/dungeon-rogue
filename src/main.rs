@@ -57,8 +57,33 @@ pub struct Climber {
     climbing: bool,
 }
 
+/// Describes the sprite assets information
+///
+/// !!Note!! Works only with TextureAtlas
+#[derive(Clone, Debug)]
+struct SpriteAssetInfo {
+    /// The `width` of the sprite cell (not the whole atlas texture)
+    width: f32,
+
+    /// The `height` of the sprite cell (not the whole atlas texture)
+    height: f32,
+
+    /// TextureAtlas
+    texture: Handle<TextureAtlas>,
+}
+
+#[derive(Debug, Inspectable)]
+enum PlayerNames {
+    Pumpkin,
+    Dragon,
+}
+
+#[derive(Component, Debug, Inspectable)]
+struct PlayerName(PlayerNames);
+
 struct Sprites {
-    player: Handle<TextureAtlas>,
+    pumpkin: SpriteAssetInfo,
+    dragon: SpriteAssetInfo,
 }
 
 fn setup(
@@ -68,11 +93,25 @@ fn setup(
 ) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
-    let texture_handle = asset_server.load("atlas/pumpkin_dude.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(16.0, 32.0), 4, 1);
+    let pumpkin_texture_handle = asset_server.load("atlas/pumpkin_dude_16_32.png");
+    let pumpkin_texture_atlas =
+        TextureAtlas::from_grid(pumpkin_texture_handle, Vec2::new(16.0, 32.0), 8, 1);
+
+    let dragon_texture_handle = asset_server.load("atlas/dragon_dude_16_22.png");
+    let dragon_texture_atlas =
+        TextureAtlas::from_grid(dragon_texture_handle, Vec2::new(16.0, 22.0), 9, 1);
 
     commands.insert_resource(Sprites {
-        player: texture_atlases.add(texture_atlas),
+        pumpkin: SpriteAssetInfo {
+            width: 16.0,
+            height: 32.0,
+            texture: texture_atlases.add(pumpkin_texture_atlas),
+        },
+        dragon: SpriteAssetInfo {
+            width: 16.0,
+            height: 22.0,
+            texture: texture_atlases.add(dragon_texture_atlas),
+        },
     });
 }
 
@@ -92,6 +131,6 @@ fn main() {
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
-        .add_plugin(DebugPlugin)
+        // .add_plugin(DebugPlugin)
         .run();
 }

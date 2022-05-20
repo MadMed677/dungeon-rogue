@@ -5,7 +5,10 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::{Climbable, Climber, MovementDirection, MovementTendency, Speed, Sprites};
+use crate::{
+    Climbable, Climber, MovementDirection, MovementTendency, PlayerName, PlayerNames, Speed,
+    Sprites,
+};
 
 #[derive(Component, Default, Inspectable)]
 pub struct Player;
@@ -44,6 +47,7 @@ impl Plugin for PlayerPlugin {
             .add_system(player_jump)
             .add_system(detect_climb)
             .add_system(ignore_gravity_during_climbing)
+            .add_system(change_player_texture)
             .add_startup_system(spawn_debug_floor)
             .register_ldtk_entity::<PlayerBundle>("Player");
     }
@@ -71,8 +75,10 @@ fn spawn_player(
     player_query: Query<(Entity, &Transform), Added<Player>>,
 ) {
     if let Ok((player_entity, transform)) = player_query.get_single() {
-        let sprite_width = 16.0;
-        let sprite_height = 32.0;
+        let sprite_asset_info = &materials.pumpkin;
+
+        let sprite_width = sprite_asset_info.width;
+        let sprite_height = sprite_asset_info.height;
 
         let player_direction = MovementTendency::Right;
 
@@ -93,7 +99,7 @@ fn spawn_player(
             .insert(GravityScale(3.0))
             .insert(ColliderMassProperties::Density(1.0))
             .insert_bundle(SpriteSheetBundle {
-                texture_atlas: materials.player.clone(),
+                texture_atlas: sprite_asset_info.texture.clone(),
                 // Take the Wordly coordinates to place
                 // spritesheet correctly
                 transform: Transform {
@@ -111,6 +117,7 @@ fn spawn_player(
                 },
                 ..Default::default()
             })
+            .insert(PlayerName(PlayerNames::Pumpkin))
             .insert(MovementDirection(player_direction))
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.1, true),
@@ -290,6 +297,55 @@ fn ignore_gravity_during_climbing(
             gravity.0 = 0.0;
         } else {
             gravity.0 = 3.0;
+        }
+    }
+}
+
+fn change_player_texture(
+    keyboard: Res<Input<KeyCode>>,
+    materials: Res<Sprites>,
+    mut player_query: Query<
+        (
+            &mut Handle<TextureAtlas>,
+            &mut Collider,
+            &mut PlayerName,
+            &mut Transform,
+        ),
+        With<Player>,
+    >,
+) {
+    if let Ok((mut texture_atlas, mut collider, mut player_name, mut transform)) =
+        player_query.get_single_mut()
+    {
+        // If player want to change player texture by pressing `Q` character
+        if keyboard.just_pressed(KeyCode::Q) {
+            let sprite_asset_info = match &player_name.0 {
+                PlayerNames::Pumpkin => {
+                    player_name.0 = PlayerNames::Dragon;
+
+                    &materials.dragon
+                }
+                PlayerNames::Dragon => {
+                    player_name.0 = PlayerNames::Pumpkin;
+
+                    &materials.pumpkin
+                }
+            };
+
+            // Change the texture
+            *texture_atlas = sprite_asset_info.texture.clone();
+
+            // Change the object bounds
+            *collider = Collider::cuboid(
+                sprite_asset_info.width / 2.0,
+                sprite_asset_info.height / 2.0,
+            );
+
+            // Push the player a little bit up
+            //  to avoid the problem when the one sprite
+            //  is less than another sprite and we may
+            //  have a collision mismatch with the ground
+            transform.translation.y += 8.0;
         }
     }
 }
