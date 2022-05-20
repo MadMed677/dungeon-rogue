@@ -307,6 +307,7 @@ fn change_player_texture(
     mut player_query: Query<
         (
             &mut Handle<TextureAtlas>,
+            &mut TextureAtlasSprite,
             &mut Collider,
             &mut PlayerName,
             &mut Transform,
@@ -314,7 +315,7 @@ fn change_player_texture(
         With<Player>,
     >,
 ) {
-    if let Ok((mut texture_atlas, mut collider, mut player_name, mut transform)) =
+    if let Ok((mut texture_atlas, mut sprite, mut collider, mut player_name, mut transform)) =
         player_query.get_single_mut()
     {
         // If player want to change player texture by pressing `Q` character
@@ -334,6 +335,9 @@ fn change_player_texture(
 
             // Change the texture
             *texture_atlas = sprite_asset_info.texture.clone();
+
+            // Reset the animation
+            sprite.index = 0;
 
             // Change the object bounds
             *collider = Collider::cuboid(
