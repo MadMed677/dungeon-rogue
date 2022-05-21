@@ -93,23 +93,35 @@ fn setup(
 ) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
-    let pumpkin_texture_handle = asset_server.load("atlas/pumpkin_dude_16_32.png");
-    let pumpkin_texture_atlas =
-        TextureAtlas::from_grid(pumpkin_texture_handle, Vec2::new(16.0, 32.0), 8, 1);
+    let pumpkin_texture_width = 16.0;
+    let pumpkin_texture_height = 24.0;
+    let pumpkin_texture_handle = asset_server.load("atlas/pumpkin_dude_16_24.png");
+    let pumpkin_texture_atlas = TextureAtlas::from_grid(
+        pumpkin_texture_handle,
+        Vec2::new(pumpkin_texture_width, pumpkin_texture_height),
+        8,
+        1,
+    );
 
+    let dragon_texture_width = 16.0;
+    let dragon_texture_height = 22.0;
     let dragon_texture_handle = asset_server.load("atlas/dragon_dude_16_22.png");
-    let dragon_texture_atlas =
-        TextureAtlas::from_grid(dragon_texture_handle, Vec2::new(16.0, 22.0), 9, 1);
+    let dragon_texture_atlas = TextureAtlas::from_grid(
+        dragon_texture_handle,
+        Vec2::new(dragon_texture_width, dragon_texture_height),
+        9,
+        1,
+    );
 
     commands.insert_resource(Sprites {
         pumpkin: SpriteAssetInfo {
-            width: 16.0,
-            height: 32.0,
+            width: pumpkin_texture_width,
+            height: pumpkin_texture_height,
             texture: texture_atlases.add(pumpkin_texture_atlas),
         },
         dragon: SpriteAssetInfo {
-            width: 16.0,
-            height: 22.0,
+            width: dragon_texture_width,
+            height: dragon_texture_height,
             texture: texture_atlases.add(dragon_texture_atlas),
         },
     });
@@ -131,6 +143,6 @@ fn main() {
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
-        // .add_plugin(DebugPlugin)
+        .add_plugin(DebugPlugin)
         .run();
 }

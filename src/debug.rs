@@ -22,13 +22,14 @@ impl Plugin for DebugPlugin {
         // label for our debug stage
         static DEBUG: &str = "debug";
 
-        if cfg!(debug_assertions) {
+        if cfg!(feature = "debug") {
             app.add_plugin(InspectorPlugin::<Inspector>::new())
                 .register_inspectable::<Player>()
                 .register_inspectable::<Speed>()
                 .register_inspectable::<Name>()
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())
                 .add_system_to_stage(DEBUG, debug_collisions)
+                .add_system_to_stage(DEBUG, update_debug_collisions)
                 .add_plugin(LogDiagnosticsPlugin::default())
                 .add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_plugin(RapierDebugRenderPlugin::default());
@@ -72,51 +73,61 @@ fn debug_collisions(
         let half_sizes = player_collider.as_cuboid().unwrap().half_extents();
         let full_sizes = half_sizes * 2.0;
 
-        let debug_player_layer = commands.spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgba(0.5, 0.5, 0.5, 0.5),
-                custom_size: Some(full_sizes),
-                ..Default::default()
-            },
-            transform: Transform {
-                // Create relative coordinates for the player
-                translation: Vec3::new(0.0, 0.0, 20.0),
-                rotation: player_transform.rotation,
-                scale: player_transform.scale,
-            },
-            ..Default::default()
-        });
-
-        let debug_player_layer_entity = debug_player_layer.id();
-
         // Add Debug Player layer as a children of the player itself
-        commands
-            .entity(player_entity)
-            .add_child(debug_player_layer_entity);
+        commands.entity(player_entity).with_children(|parent| {
+            parent.spawn_bundle(SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgba(0.5, 0.5, 0.5, 0.5),
+                    custom_size: Some(full_sizes),
+                    ..Default::default()
+                },
+                transform: Transform {
+                    // Create relative coordinates for the player
+                    translation: Vec3::new(0.0, 0.0, 20.0),
+                    rotation: player_transform.rotation,
+                    scale: player_transform.scale,
+                },
+                ..Default::default()
+            });
+        });
     }
 
     for (climbable_entity, climbable_collider, climbable_transform) in climbables_collider.iter() {
         let half_sizes = climbable_collider.as_cuboid().unwrap().half_extents();
         let full_sizes = half_sizes * 2.0;
 
-        let debug_climbable_layer = commands.spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgba(0.7, 0.7, 0.7, 0.5),
-                custom_size: Some(full_sizes),
+        commands.entity(climbable_entity).with_children(|parent| {
+            parent.spawn_bundle(SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgba(0.7, 0.7, 0.7, 0.5),
+                    custom_size: Some(full_sizes),
+                    ..Default::default()
+                },
+                transform: Transform {
+                    translation: Vec3::new(0.0, 0.0, 20.0),
+                    rotation: climbable_transform.rotation,
+                    scale: climbable_transform.scale,
+                },
                 ..Default::default()
-            },
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, 20.0),
-                rotation: climbable_transform.rotation,
-                scale: climbable_transform.scale,
-            },
-            ..Default::default()
+            });
         });
+    }
+}
 
-        let debug_climbable_layer_entity = debug_climbable_layer.id();
+fn update_debug_collisions(
+    parent_query: Query<(&Collider, &Children), Changed<Collider>>,
+    mut children_query: Query<&mut Sprite>,
+) {
+    for (collider, children) in parent_query.iter() {
+        for child in children.iter() {
+            let half_sizes = collider.as_cuboid().unwrap().half_extents();
+            let full_sizes = half_sizes * 2.0;
 
-        commands
-            .entity(climbable_entity)
-            .add_child(debug_climbable_layer_entity);
+            // We may use `unwrap()` here because we definitely know that
+            //  we iterates via all children for specific entity and we sure
+            //  that we may get this entity directly
+            let mut sprite = children_query.get_mut(*child).unwrap();
+            sprite.custom_size = Some(full_sizes);
+        }
     }
 }

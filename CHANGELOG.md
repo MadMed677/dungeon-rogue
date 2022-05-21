@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.1.1
+### Fixed
+- [debug] Update debug layer when dimensions are changed
+
 ## Version 0.1.0
 ![How the game looks like](./docs/dungeon_rogue_0_1_0.gif)
 
@@ -8,6 +12,7 @@
 - You may change player sprite by pressing `Q` (now only 2 options: Pumpkin and Dragon)
 - You may travel through different levels in the same map
 - Movement animation
+- Debug layer to visualize Player, Ladder and Wall collisions
 
 ### What is not working:
 #### Ladders isn't working

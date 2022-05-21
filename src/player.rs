@@ -85,12 +85,7 @@ fn spawn_player(
         commands
             .entity(player_entity)
             .insert(RigidBody::Dynamic)
-            .insert(Collider::cuboid(
-                // Make the rigid body a little bit smaller
-                //  to be fit on the map
-                sprite_width / 2.0,
-                sprite_height / 2.0,
-            ))
+            .insert(Collider::cuboid(sprite_width / 2.0, sprite_height / 2.0))
             // Add Velocity component to iterate via it but with zero value
             .insert(Velocity::zero())
             .insert(ExternalImpulse::default())
@@ -209,7 +204,7 @@ fn player_jump(
 ) {
     if let Ok((mut external_impulse, mut climber)) = player_query.get_single_mut() {
         if keyboard.just_pressed(KeyCode::Space) {
-            external_impulse.impulse = Vec2::new(0.0, 40.0);
+            external_impulse.impulse = Vec2::new(0.0, 35.0);
             climber.climbing = false;
         }
     }

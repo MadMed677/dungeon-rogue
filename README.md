@@ -41,3 +41,17 @@ The game should work as:
 ### Documentation / Tests
 All the code should be covered by documentation and tests and integrate it into
 CI / CD pipeline.
+
+## Run
+### Development
+```shell
+cargo run
+
+# For faster compilation use this command
+# cargo run --features bevy/dynamic
+```
+
+### Debug
+```shell
+cargo run --features bevy/dynamic --features debug
+```
