@@ -12,7 +12,6 @@ impl Plugin for GameLdtkPlugin {
                 level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {
                     load_level_neighbors: true,
                 },
-                set_clear_color: SetClearColor::FromLevelBackground,
                 ..Default::default()
             })
             // .add_startup_stage("game_setup_ldtk", SystemStage::single(setup));

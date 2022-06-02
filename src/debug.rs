@@ -5,6 +5,7 @@ use bevy_rapier2d::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 
+use crate::enemy::Enemy;
 use crate::map::WallCollision;
 use crate::player::Player;
 use crate::{Climbable, Speed};
@@ -14,6 +15,7 @@ pub struct DebugPlugin;
 #[derive(Inspectable, Default)]
 struct Inspector {
     player: InspectorQuerySingle<Entity, With<Player>>,
+    enemies: InspectorQuery<Entity, With<Enemy>>,
     collisions: InspectorQuery<Entity, With<WallCollision>>,
 }
 
@@ -41,31 +43,33 @@ impl Plugin for DebugPlugin {
 ///  the collision to be able to debug it
 fn debug_collisions(
     mut commands: Commands,
-    // wall_colliders: Query<(Entity, &Collider, &GlobalTransform), With<WallCollision>>,
+    _wall_colliders: Query<(Entity, &Collider, &Transform), Added<WallCollision>>,
     player_collider: Query<(Entity, &Collider, &GlobalTransform), Added<Player>>,
+    enemies_collider: Query<(Entity, &Collider), Added<Enemy>>,
+    // enemies_collider: Query<(Entity, &Collider, &Transform, &GlobalTransform), Added<Enemy>>,
     climbables_collider: Query<(Entity, &Collider, &GlobalTransform), Added<Climbable>>,
 ) {
-    // Show debug layer for the walls
+    // Show the debug layer for the walls
     // for (entity, collider, transform) in wall_colliders.iter() {
     //     let half_sizes = collider.as_cuboid().unwrap().half_extents();
     //     let full_sizes = half_sizes * 2.0;
 
-    //     commands
-    //         .spawn()
-    //         .insert_bundle(SpriteBundle {
+    //     commands.entity(entity).with_children(|parent| {
+    //         parent.spawn_bundle(SpriteBundle {
     //             sprite: Sprite {
     //                 color: Color::rgba(0.5, 0.5, 0.5, 0.5),
     //                 custom_size: Some(full_sizes),
     //                 ..Default::default()
     //             },
     //             transform: Transform {
-    //                 translation: Vec3::new(transform.translation.x, transform.translation.y, 20.0),
+    //                 translation: Vec3::new(0.0, 0.0, 20.0),
+    //                 // translation: Vec3::new(transform.translation.x, transform.translation.y, 20.0),
     //                 rotation: transform.rotation,
     //                 scale: transform.scale,
     //             },
     //             ..Default::default()
-    //         })
-    //         .insert(Parent(entity));
+    //         });
+    //     });
     // }
 
     // Show the debug layer for the player
@@ -86,6 +90,26 @@ fn debug_collisions(
                     translation: Vec3::new(0.0, 0.0, 20.0),
                     rotation: player_transform.rotation,
                     scale: player_transform.scale,
+                },
+                ..Default::default()
+            });
+        });
+    }
+
+    for (enemy_entity, enemy_collider) in enemies_collider.iter() {
+        let half_sizes = enemy_collider.as_cuboid().unwrap().half_extents();
+        let full_sizes = half_sizes * 2.0;
+
+        commands.entity(enemy_entity).with_children(|parent| {
+            parent.spawn_bundle(SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgba(1.0, 0.0, 0.0, 1.0),
+                    custom_size: Some(full_sizes),
+                    ..Default::default()
+                },
+                transform: Transform {
+                    translation: Vec3::new(0.0, 0.0, 20.0),
+                    ..Default::default()
                 },
                 ..Default::default()
             });

@@ -1,4 +1,5 @@
 mod debug;
+mod enemy;
 mod ldtk;
 mod map;
 mod physics;
@@ -9,6 +10,7 @@ use std::collections::HashSet;
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use debug::DebugPlugin;
+use enemy::EnemyPlugin;
 use ldtk::GameLdtkPlugin;
 use map::MapPlugin;
 use physics::PhysicsPlugin;
@@ -143,6 +145,7 @@ fn main() {
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
+        .add_plugin(EnemyPlugin)
         .add_plugin(DebugPlugin)
         .run();
 }

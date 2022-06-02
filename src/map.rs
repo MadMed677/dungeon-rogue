@@ -239,6 +239,9 @@ fn spawn_wall_collision(
                 }
 
                 for wall_rect in wall_rects {
+                    let x = (wall_rect.left + wall_rect.right + 1) as f32 * grid_size as f32 / 2.0;
+                    let y = (wall_rect.bottom + wall_rect.top + 1) as f32 * grid_size as f32 / 2.0;
+
                     commands
                         .spawn()
                         .insert(Collider::cuboid(
@@ -251,11 +254,7 @@ fn spawn_wall_collision(
                         ))
                         .insert(RigidBody::Fixed)
                         .insert(Friction::new(0.1))
-                        .insert(Transform::from_xyz(
-                            (wall_rect.left + wall_rect.right + 1) as f32 * grid_size as f32 / 2.0,
-                            (wall_rect.bottom + wall_rect.top + 1) as f32 * grid_size as f32 / 2.0,
-                            0.0,
-                        ))
+                        .insert(Transform::from_xyz(x, y, 0.0))
                         .insert(GlobalTransform::default())
                         .insert(WallCollision)
                         .insert(Parent(level_entity));
@@ -318,17 +317,6 @@ fn pause_physics_during_map_load(
     }
 }
 
-/// This method is a kludge. I need it only to sync global coordinates
-///  with local coordinates. Without it all collisions has not been
-///  translated to the actual coordinates
-fn sync_global_coords_with_local(
-    mut wall_colliders_query: Query<(&GlobalTransform, &mut Transform), Added<WallCollision>>,
-) {
-    for (global_transform, mut transform) in wall_colliders_query.iter_mut() {
-        transform.translation = global_transform.translation;
-    }
-}
-
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
@@ -337,7 +325,6 @@ impl Plugin for MapPlugin {
             .add_system(pause_physics_during_map_load)
             .add_system(spawn_wall_collision)
             .add_system(update_level_selection)
-            .add_system(sync_global_coords_with_local)
             .register_ldtk_int_cell::<DirtBundle>(CollisionId::Dirt as i32)
             .register_ldtk_int_cell::<LadderBundle>(CollisionId::Ladder as i32)
             .register_ldtk_int_cell::<StoneBundle>(CollisionId::Stone as i32);

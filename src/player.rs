@@ -40,7 +40,6 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        // app.add_startup_stage("game_setup_actors", SystemStage::single(spawn_player_2))
         app.add_system(spawn_player)
             .add_system(player_movement)
             .add_system(player_movement_animation)

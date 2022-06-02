@@ -1,11 +1,27 @@
 # Changelog
 
-## Version 0.1.1
+## [0.1.2] - 2022-06-02
+![0.1.2](./docs/dungeon_rogue_0_1_2.gif)
+
+### Added
+- [debug] Debug layer now might be run via command `cargo run --features bevy/dynamic --features debug` which enables debug layer on the top of current ones and visualize all the collisions on the screen.
+- Added an enemies on the screen based on Ldtk map position. Currently they are visualized just as boxes.
+
+### Changed
+- Updated `bevy_rapier2d` to [0.14](https://github.com/dimforge/bevy_rapier/pull/181) when the collider and rigid-body positions are read from the `GlobalTransform` instead of `Transform`.
+After that all collisions with the floor, ladders, and enemies works correctly. 
+I've also created an issue into the [bevy_ecs_ldtk](https://github.com/Trouv/bevy_ecs_ldtk/issues/89) when described the problem and @Trouv helped me with the explanation.
+Hopefully, now everything works fine.
+
+### Removed
+- `sync_global_coords_with_local` system because `rapier` now works with `GlobalTransform`.
+
+## [0.1.1]
 ### Fixed
 - [debug] Update debug layer when dimensions are changed
 
-## Version 0.1.0
-![How the game looks like](./docs/dungeon_rogue_0_1_0.gif)
+## [0.1.0]
+![0.1.0](./docs/dungeon_rogue_0_1_0.gif)
 
 ### Initial version which provides:
 - Spawn the player and the map with collisions
