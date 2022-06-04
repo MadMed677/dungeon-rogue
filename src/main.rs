@@ -1,6 +1,7 @@
 mod debug;
 mod enemy;
 mod ldtk;
+mod main_menu_ui;
 mod map;
 mod physics;
 mod player;
@@ -12,6 +13,7 @@ use bevy_inspector_egui::Inspectable;
 use debug::DebugPlugin;
 use enemy::EnemyPlugin;
 use ldtk::GameLdtkPlugin;
+use main_menu_ui::MainMenuUIPlugin;
 use map::MapPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
@@ -74,19 +76,22 @@ struct SpriteAssetInfo {
     texture: Handle<TextureAtlas>,
 }
 
-#[derive(Debug, Inspectable)]
-enum PlayerNames {
-    Pumpkin,
-    Dragon,
-}
-
-#[derive(Component, Debug, Inspectable)]
-struct PlayerName(PlayerNames);
-
 struct Sprites {
     pumpkin: SpriteAssetInfo,
     dragon: SpriteAssetInfo,
 }
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+enum ApplicationState {
+    /// Describes that currently a player in the game
+    Game,
+
+    /// Describes that currently a player in the menu
+    Menu,
+}
+
+pub struct PauseTheGameEvent;
+pub struct ResumeTheGameEvent;
 
 fn setup(
     mut commands: Commands,
@@ -94,6 +99,7 @@ fn setup(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
 
     let pumpkin_texture_width = 16.0;
     let pumpkin_texture_height = 24.0;
@@ -139,9 +145,13 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
+        .add_state(ApplicationState::Menu)
+        .add_event::<PauseTheGameEvent>()
+        .add_event::<ResumeTheGameEvent>()
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)
+        .add_plugin(MainMenuUIPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)

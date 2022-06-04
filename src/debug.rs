@@ -6,7 +6,6 @@ use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 
 use crate::enemy::Enemy;
-use crate::map::WallCollision;
 use crate::player::Player;
 use crate::{Climbable, Speed};
 
@@ -15,8 +14,7 @@ pub struct DebugPlugin;
 #[derive(Inspectable, Default)]
 struct Inspector {
     player: InspectorQuerySingle<Entity, With<Player>>,
-    enemies: InspectorQuery<Entity, With<Enemy>>,
-    collisions: InspectorQuery<Entity, With<WallCollision>>,
+    buttons: InspectorQuery<Entity, With<Button>>,
 }
 
 impl Plugin for DebugPlugin {
@@ -43,35 +41,10 @@ impl Plugin for DebugPlugin {
 ///  the collision to be able to debug it
 fn debug_collisions(
     mut commands: Commands,
-    _wall_colliders: Query<(Entity, &Collider, &Transform), Added<WallCollision>>,
     player_collider: Query<(Entity, &Collider, &GlobalTransform), Added<Player>>,
     enemies_collider: Query<(Entity, &Collider), Added<Enemy>>,
-    // enemies_collider: Query<(Entity, &Collider, &Transform, &GlobalTransform), Added<Enemy>>,
     climbables_collider: Query<(Entity, &Collider, &GlobalTransform), Added<Climbable>>,
 ) {
-    // Show the debug layer for the walls
-    // for (entity, collider, transform) in wall_colliders.iter() {
-    //     let half_sizes = collider.as_cuboid().unwrap().half_extents();
-    //     let full_sizes = half_sizes * 2.0;
-
-    //     commands.entity(entity).with_children(|parent| {
-    //         parent.spawn_bundle(SpriteBundle {
-    //             sprite: Sprite {
-    //                 color: Color::rgba(0.5, 0.5, 0.5, 0.5),
-    //                 custom_size: Some(full_sizes),
-    //                 ..Default::default()
-    //             },
-    //             transform: Transform {
-    //                 translation: Vec3::new(0.0, 0.0, 20.0),
-    //                 // translation: Vec3::new(transform.translation.x, transform.translation.y, 20.0),
-    //                 rotation: transform.rotation,
-    //                 scale: transform.scale,
-    //             },
-    //             ..Default::default()
-    //         });
-    //     });
-    // }
-
     // Show the debug layer for the player
     if let Ok((player_entity, player_collider, player_transform)) = player_collider.get_single() {
         let half_sizes = player_collider.as_cuboid().unwrap().half_extents();

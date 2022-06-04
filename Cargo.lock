@@ -643,9 +643,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_rapier2d"
-version = "0.13.1"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32d3365f8fab6938c2489598e028a11dcfdc63d2f4cbc51ff0ddf61bf0673ed9"
+checksum = "b54239dabc74ecc982a4dfcfa464326284303d6a85627d4a20e449263013fb9b"
 dependencies = [
  "bevy",
  "bitflags",
@@ -1443,7 +1443,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
 name = "dungeon_rogue"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
@@ -2890,9 +2890,9 @@ checksum = "63e935c45e09cc6dcf00d2f0b2d630a58f4095320223d47fc68918722f0538b6"
 
 [[package]]
 name = "rapier2d"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c575f233b1c105e17366b9d2edb82ab1bb4c95d55d22741c20e2e1c0aa6932a3"
+checksum = "43f7f18a9281f4c4176754437a768e1b7124ce5729060c8743db670f7ebb3c43"
 dependencies = [
  "approx",
  "arrayvec",
@@ -2900,7 +2900,6 @@ dependencies = [
  "bitflags",
  "crossbeam",
  "downcast-rs",
- "instant",
  "nalgebra",
  "num-derive",
  "num-traits",

@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::Camera2d};
 use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
@@ -77,7 +77,10 @@ pub struct LadderBundle {
 const ASPECT_RATIO: f32 = 16.0 / 9.0;
 
 fn fit_camera_inside_current_level(
-    mut camera_query: Query<(&mut OrthographicProjection, &mut Transform), Without<Player>>,
+    mut camera_query: Query<
+        (&mut OrthographicProjection, &mut Transform),
+        (Without<Player>, With<Camera2d>),
+    >,
     level_query: Query<
         (&Transform, &Handle<LdtkLevel>),
         (Without<OrthographicProjection>, Without<Player>),

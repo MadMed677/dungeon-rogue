@@ -6,9 +6,17 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
 use crate::{
-    Climbable, Climber, MovementDirection, MovementTendency, PlayerName, PlayerNames, Speed,
-    Sprites,
+    ApplicationState, Climbable, Climber, MovementDirection, MovementTendency, Speed, Sprites,
 };
+
+#[derive(Debug, Inspectable)]
+enum PlayerNames {
+    Pumpkin,
+    Dragon,
+}
+
+#[derive(Component, Debug, Inspectable)]
+struct PlayerName(PlayerNames);
 
 #[derive(Component, Default, Inspectable)]
 pub struct Player;
@@ -40,32 +48,16 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_player)
+        app.add_system_set(SystemSet::on_enter(ApplicationState::Game).with_system(spawn_player))
+            // app.add_system(spawn_player)
             .add_system(player_movement)
             .add_system(player_movement_animation)
             .add_system(player_jump)
             .add_system(detect_climb)
             .add_system(ignore_gravity_during_climbing)
             .add_system(change_player_texture)
-            .add_startup_system(spawn_debug_floor)
             .register_ldtk_entity::<PlayerBundle>("Player");
     }
-}
-
-fn spawn_debug_floor(mut commands: Commands) {
-    commands
-        .spawn()
-        .insert_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.7, 0.7, 0.7),
-                custom_size: Some(Vec2::new(600.0, 10.0)),
-                ..Default::default()
-            },
-            transform: Transform::from_xyz(0.0, 0.0, 20.0),
-            ..Default::default()
-        })
-        // .insert(Transform::from_xyz(190.0, 400.0, 20.0))
-        .insert(Collider::cuboid(300.0, 5.0));
 }
 
 fn spawn_player(

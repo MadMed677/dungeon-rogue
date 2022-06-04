@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+use crate::ApplicationState;
+
 pub struct EnemyPlugin;
 
 #[derive(Component, Default)]
@@ -17,16 +19,14 @@ struct EnemyBundle {
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_enemy)
+        app.add_system_set(SystemSet::on_enter(ApplicationState::Game).with_system(spawn_enemy))
+            // app.add_system(spawn_enemy)
             // Use the same name as it's covered in "LdtkMap"
             .register_ldtk_entity::<EnemyBundle>("Mob");
     }
 }
 
-fn spawn_enemy(
-    mut commands: Commands,
-    enemies_query: Query<(Entity, &Transform), (Added<Enemy>, Added<EntityInstance>)>,
-) {
+fn spawn_enemy(mut commands: Commands, enemies_query: Query<(Entity, &Transform), Added<Enemy>>) {
     for (enemy, transform) in enemies_query.iter() {
         let sprite_width = 10.0;
         let sprite_height = 10.0;
