@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3] - 2022-06-06
+![0.1.3](./docs/dungeon_rogue_0_1_3.gif)
+
+### Added
+- Add Main Menu to pause and resume the game. For now it may only pause and resume the game. But every button just resume the game and now it's more fake.
+- Add `iyes_loopless` crate to manupulate with the game state. For now player and enemies spawns only when user enter the game in the first time. And when the user in the menu all systems which are related with player or enemy are not running anymore. It should help to manupulate with systems extendability because the logic has been written for the whole plugin but not for the each system.
+
+
 ## [0.1.2] - 2022-06-02
 ![0.1.2](./docs/dungeon_rogue_0_1_2.gif)
 
