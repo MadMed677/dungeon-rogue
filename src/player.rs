@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
+use iyes_loopless::prelude::*;
 
 use crate::{
     ApplicationState, Climbable, Climber, MovementDirection, MovementTendency, Speed, Sprites,
@@ -48,14 +49,19 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(ApplicationState::Game).with_system(spawn_player))
-            .add_system(player_movement)
-            .add_system(player_movement_animation)
-            .add_system(player_jump)
-            .add_system(detect_climb)
-            .add_system(ignore_gravity_during_climbing)
-            .add_system(change_player_texture)
-            .register_ldtk_entity::<PlayerBundle>("Player");
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Game)
+                .with_system(spawn_player)
+                .with_system(player_movement)
+                .with_system(player_movement_animation)
+                .with_system(player_jump)
+                .with_system(detect_climb)
+                .with_system(ignore_gravity_during_climbing)
+                .with_system(change_player_texture)
+                .into(),
+        )
+        .register_ldtk_entity::<PlayerBundle>("Player");
     }
 }
 

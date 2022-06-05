@@ -9,6 +9,8 @@ mod player;
 use std::collections::HashSet;
 
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
+
 use bevy_inspector_egui::Inspectable;
 use debug::DebugPlugin;
 use enemy::EnemyPlugin;
@@ -145,7 +147,7 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
-        .add_state(ApplicationState::Menu)
+        .add_loopless_state(ApplicationState::Menu)
         .add_event::<PauseTheGameEvent>()
         .add_event::<ResumeTheGameEvent>()
         .add_plugins(DefaultPlugins)

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
 
 use crate::{ApplicationState, ResumeTheGameEvent};
 
@@ -162,8 +163,13 @@ fn button_interaction(
 
 impl Plugin for MainMenuUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(ApplicationState::Menu).with_system(setup))
-            .add_system_set(SystemSet::on_exit(ApplicationState::Menu).with_system(destroy))
-            .add_system(button_interaction);
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Menu)
+                .with_system(button_interaction)
+                .into(),
+        )
+        .add_enter_system(ApplicationState::Menu, setup)
+        .add_exit_system(ApplicationState::Menu, destroy);
     }
 }

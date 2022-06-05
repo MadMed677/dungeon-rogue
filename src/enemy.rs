@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
+use iyes_loopless::prelude::*;
 
 use crate::ApplicationState;
 
@@ -19,10 +20,14 @@ struct EnemyBundle {
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(ApplicationState::Game).with_system(spawn_enemy))
-            // app.add_system(spawn_enemy)
-            // Use the same name as it's covered in "LdtkMap"
-            .register_ldtk_entity::<EnemyBundle>("Mob");
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Game)
+                .with_system(spawn_enemy)
+                .into(),
+        )
+        // Use the same name as it's covered in "LdtkMap"
+        .register_ldtk_entity::<EnemyBundle>("Mob");
     }
 }
 
