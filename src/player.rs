@@ -49,7 +49,6 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(ApplicationState::Game).with_system(spawn_player))
-            // app.add_system(spawn_player)
             .add_system(player_movement)
             .add_system(player_movement_animation)
             .add_system(player_jump)

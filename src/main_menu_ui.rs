@@ -11,9 +11,6 @@ pub struct MainMenuUIPlugin;
 #[derive(Component)]
 struct MainMenuUI;
 
-#[derive(Component)]
-struct SimulationClickEvent;
-
 fn build_classic_button() -> ButtonBundle {
     ButtonBundle {
         style: Style {
@@ -45,31 +42,89 @@ fn build_classic_text(value: &str, asset_server: &Res<AssetServer>) -> TextBundl
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
+        // Top-level container which contains the whole page
         .spawn_bundle(NodeBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                justify_content: JustifyContent::SpaceBetween,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::NONE.into(),
+            color: Color::rgba(0.1, 0.1, 0.1, 0.8).into(),
             ..Default::default()
         })
+        // Menu container
         .with_children(|parent| {
             parent
                 .spawn_bundle(NodeBundle {
                     style: Style {
-                        size: Size::new(Val::Percent(100.0), Val::Px(100.0)),
+                        size: Size::new(Val::Percent(50.0), Val::Percent(95.0)),
+                        flex_direction: FlexDirection::ColumnReverse,
+                        justify_content: JustifyContent::SpaceBetween,
+                        // justify_content: JustifyContent::FlexStart,
                         border: Rect::all(Val::Px(5.0)),
+                        align_content: AlignContent::Center,
                         ..Default::default()
                     },
-                    color: Color::rgb(0.1, 0.1, 0.1).into(),
+                    color: Color::rgba(0.2, 0.2, 0.2, 0.5).into(),
                     ..Default::default()
                 })
                 .with_children(|parent| {
                     parent
-                        .spawn_bundle(build_classic_button())
+                        .spawn_bundle(NodeBundle {
+                            style: Style {
+                                size: Size::new(Val::Percent(100.0), Val::Percent(20.0)),
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::Center,
+                                ..Default::default()
+                            },
+                            color: Color::rgba(0.2, 0.2, 0.2, 0.1).into(),
+                            ..Default::default()
+                        })
                         .with_children(|parent| {
-                            parent.spawn_bundle(build_classic_text("Play", &asset_server));
+                            parent.spawn_bundle(build_classic_text("Dungeon Rogue", &asset_server));
+                        });
+                })
+                .with_children(|parent| {
+                    parent
+                        .spawn_bundle(NodeBundle {
+                            style: Style {
+                                size: Size::new(Val::Percent(100.0), Val::Percent(70.0)),
+                                flex_direction: FlexDirection::ColumnReverse,
+                                border: Rect::all(Val::Px(5.0)),
+                                ..Default::default()
+                            },
+                            color: Color::NONE.into(),
+                            // color: Color::rgba(0.2, 0.2, 0.2, 0.3).into(),
+                            ..Default::default()
+                        })
+                        .with_children(|parent| {
+                            parent
+                                .spawn_bundle(build_classic_button())
+                                .with_children(|parent| {
+                                    parent.spawn_bundle(build_classic_text("Play", &asset_server));
+                                });
+                        })
+                        .with_children(|parent| {
+                            parent
+                                .spawn_bundle(build_classic_button())
+                                .with_children(|parent| {
+                                    parent.spawn_bundle(build_classic_text("Save", &asset_server));
+                                });
+                        })
+                        .with_children(|parent| {
+                            parent
+                                .spawn_bundle(build_classic_button())
+                                .with_children(|parent| {
+                                    parent.spawn_bundle(build_classic_text("Load", &asset_server));
+                                });
+                        })
+                        .with_children(|parent| {
+                            parent
+                                .spawn_bundle(build_classic_button())
+                                .with_children(|parent| {
+                                    parent.spawn_bundle(build_classic_text("Exit", &asset_server));
+                                });
                         });
                 });
         })
@@ -107,8 +162,7 @@ fn button_interaction(
 
 impl Plugin for MainMenuUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SimulationClickEvent>()
-            .add_system_set(SystemSet::on_enter(ApplicationState::Menu).with_system(setup))
+        app.add_system_set(SystemSet::on_enter(ApplicationState::Menu).with_system(setup))
             .add_system_set(SystemSet::on_exit(ApplicationState::Menu).with_system(destroy))
             .add_system(button_interaction);
     }

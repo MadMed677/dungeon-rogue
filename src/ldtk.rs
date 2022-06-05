@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
+use bevy_rapier2d::plugin::RapierConfiguration;
 
 use crate::{ApplicationState, PauseTheGameEvent, ResumeTheGameEvent};
 
@@ -53,16 +54,19 @@ fn change_game_state(
     mut app_state: ResMut<State<ApplicationState>>,
     mut pause_game_event: EventReader<PauseTheGameEvent>,
     mut resume_game_event: EventReader<ResumeTheGameEvent>,
+    mut rapier_config: ResMut<RapierConfiguration>,
 ) {
     for _ in pause_game_event.iter() {
-        app_state
-            .set(ApplicationState::Menu)
-            .expect("Should change the game state");
+        if app_state.set(ApplicationState::Menu).is_ok() {
+            // Turn off the physics when we pause the game
+            rapier_config.physics_pipeline_active = false;
+        }
     }
 
     for _ in resume_game_event.iter() {
-        app_state
-            .set(ApplicationState::Game)
-            .expect("Should change the game state");
+        if app_state.set(ApplicationState::Game).is_ok() {
+            // Turn on the physics when we resume the game
+            rapier_config.physics_pipeline_active = true;
+        }
     }
 }
