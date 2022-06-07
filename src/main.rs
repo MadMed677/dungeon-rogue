@@ -23,25 +23,13 @@ use player::PlayerPlugin;
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
 
-impl Default for Speed {
-    fn default() -> Self {
-        Self(50.0)
-    }
-}
-
 #[derive(Inspectable)]
 enum MovementTendency {
     Left,
     Right,
 }
 
-impl Default for MovementTendency {
-    fn default() -> Self {
-        Self::Right
-    }
-}
-
-#[derive(Component, Default, Inspectable)]
+#[derive(Component, Inspectable)]
 pub struct MovementDirection(MovementTendency);
 
 #[derive(Component, Copy, Clone, Debug, Default)]

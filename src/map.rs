@@ -29,7 +29,6 @@ pub struct StoneBundle {
 pub struct ColliderBundle {
     pub collider: Collider,
     pub sensor: Sensor,
-    // pub rigid_body: RigidBody,
 }
 
 impl Default for ColliderBundle {
@@ -37,7 +36,6 @@ impl Default for ColliderBundle {
         Self {
             collider: Collider::cuboid(2.0, 2.0),
             sensor: Sensor(false),
-            // rigid_body: Default::default(),
         }
     }
 }
@@ -47,7 +45,6 @@ impl From<EntityInstance> for ColliderBundle {
         Self {
             collider: Collider::cuboid(2.0, 2.0),
             sensor: Sensor(false),
-            // rigid_body: RigidBody::Fixed,
         }
     }
 }
@@ -58,7 +55,6 @@ impl From<IntGridCell> for ColliderBundle {
             Self {
                 collider: Collider::cuboid(8.0, 8.0),
                 sensor: Sensor(true),
-                // rigid_body: RigidBody::Dynamic,
             }
         } else {
             unimplemented!();

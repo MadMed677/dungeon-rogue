@@ -123,8 +123,9 @@ fn update_debug_collisions(
             // We may use `unwrap()` here because we definitely know that
             //  we iterates via all children for specific entity and we sure
             //  that we may get this entity directly
-            let mut sprite = children_query.get_mut(*child).unwrap();
-            sprite.custom_size = Some(full_sizes);
+            if let Ok(mut sprite) = children_query.get_mut(*child) {
+                sprite.custom_size = Some(full_sizes);
+            };
         }
     }
 }

@@ -31,6 +31,17 @@ struct MovementAnimation {
 /// Describes that entity on move or not
 struct OnMove(bool);
 
+#[derive(Component, Debug, Inspectable)]
+struct GroundDetection {
+    pub on_ground: bool,
+}
+
+#[derive(Component)]
+struct GroundSensor {
+    pub ground_detection_entity: Entity,
+    pub intersecting_ground_entities: HashSet<Entity>,
+}
+
 #[derive(Bundle, LdtkEntity)]
 struct PlayerBundle {
     pub player: Player,
@@ -59,6 +70,8 @@ impl Plugin for PlayerPlugin {
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(change_player_texture)
+                .with_system(spawn_ground_sensor)
+                .with_system(ground_detection)
                 .into(),
         )
         .register_ldtk_entity::<PlayerBundle>("Player");
@@ -119,6 +132,7 @@ fn spawn_player(
                 intersaction_elements: HashSet::new(),
                 climbing: false,
             })
+            .insert(GroundDetection { on_ground: false })
             .insert(Speed(120.0));
     }
 }
@@ -196,10 +210,12 @@ fn player_movement(
 
 fn player_jump(
     keyboard: Res<Input<KeyCode>>,
-    mut player_query: Query<(&mut ExternalImpulse, &mut Climber), With<Player>>,
+    mut player_query: Query<(&mut ExternalImpulse, &mut Climber, &GroundDetection), With<Player>>,
 ) {
-    if let Ok((mut external_impulse, mut climber)) = player_query.get_single_mut() {
-        if keyboard.just_pressed(KeyCode::Space) {
+    if let Ok((mut external_impulse, mut climber, ground_detection)) = player_query.get_single_mut()
+    {
+        if keyboard.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing)
+        {
             external_impulse.impulse = Vec2::new(0.0, 35.0);
             climber.climbing = false;
         }
@@ -239,6 +255,70 @@ fn player_movement_animation(
                 // Loop the animation
                 sprite.index = 0;
             }
+        }
+    }
+}
+
+fn spawn_ground_sensor(
+    mut commands: Commands,
+    detect_ground_query: Query<(Entity, &Collider, &Transform), Added<GroundDetection>>,
+) {
+    for (entity, collider, transform) in detect_ground_query.iter() {
+        if let Some(cuboid) = collider.as_cuboid() {
+            let half_extents = &cuboid.half_extents();
+
+            let detector_shape = Collider::cuboid(half_extents.x, half_extents.y);
+            let sensor_translation = Vec3::new(0.0, -half_extents.y, 0.0) / transform.scale;
+
+            commands.entity(entity).with_children(|parent| {
+                parent
+                    .spawn()
+                    .insert(Sensor(true))
+                    .insert(detector_shape)
+                    .insert(Transform::from_translation(sensor_translation))
+                    .insert(GlobalTransform::default())
+                    // We should make the weight of this rigid body as 0 because
+                    //  otherwise it will affect the user but we want to make it
+                    //  just as trigger for ground detection reaction
+                    .insert(ColliderMassProperties::Density(0.0))
+                    // .insert(ActiveEvents::COLLISION_EVENTS)
+                    .insert(GroundSensor {
+                        ground_detection_entity: entity,
+                        intersecting_ground_entities: HashSet::new(),
+                    });
+            });
+        }
+    }
+}
+
+fn ground_detection(
+    mut ground_detectors: Query<&mut GroundDetection>,
+    mut ground_sensors: Query<(Entity, &mut GroundSensor)>,
+    mut collisions: EventReader<CollisionEvent>,
+    rigid_bodies: Query<&RigidBody>,
+) {
+    for (_, mut ground_sensor) in ground_sensors.iter_mut() {
+        for collision in collisions.iter() {
+            match collision {
+                CollisionEvent::Started(ground, player, _) => {
+                    if let Ok(_) = rigid_bodies.get(*player) {
+                        if player == &ground_sensor.ground_detection_entity {
+                            ground_sensor.intersecting_ground_entities.insert(*ground);
+                        }
+                    }
+                }
+                CollisionEvent::Stopped(ground, player, _) => {
+                    if player == &ground_sensor.ground_detection_entity {
+                        ground_sensor.intersecting_ground_entities.remove(ground);
+                    }
+                }
+            }
+        }
+
+        if let Ok(mut ground_detection) =
+            ground_detectors.get_mut(ground_sensor.ground_detection_entity)
+        {
+            ground_detection.on_ground = ground_sensor.intersecting_ground_entities.len() > 0;
         }
     }
 }
