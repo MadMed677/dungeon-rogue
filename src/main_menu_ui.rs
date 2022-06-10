@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, ResumeTheGameEvent};
+use crate::{ApplicationState, ExitTheGameEvent, ResumeTheGameEvent};
 
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
@@ -11,6 +11,16 @@ pub struct MainMenuUIPlugin;
 
 #[derive(Component)]
 struct MainMenuUI;
+
+enum MenuButtonType {
+    Play,
+    Load,
+    Save,
+    Exit,
+}
+
+#[derive(Component)]
+struct MenuButton(MenuButtonType);
 
 fn build_classic_button() -> ButtonBundle {
     ButtonBundle {
@@ -102,6 +112,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|parent| {
                             parent
                                 .spawn_bundle(build_classic_button())
+                                .insert(MenuButton(MenuButtonType::Play))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text("Play", &asset_server));
                                 });
@@ -109,6 +120,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|parent| {
                             parent
                                 .spawn_bundle(build_classic_button())
+                                .insert(MenuButton(MenuButtonType::Save))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text("Save", &asset_server));
                                 });
@@ -116,6 +128,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|parent| {
                             parent
                                 .spawn_bundle(build_classic_button())
+                                .insert(MenuButton(MenuButtonType::Load))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text("Load", &asset_server));
                                 });
@@ -123,6 +136,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|parent| {
                             parent
                                 .spawn_bundle(build_classic_button())
+                                .insert(MenuButton(MenuButtonType::Exit))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text("Exit", &asset_server));
                                 });
@@ -140,16 +154,27 @@ fn destroy(mut commands: Commands, main_menu_ui_query: Query<Entity, With<MainMe
 
 fn button_interaction(
     mut interaction_query: Query<
-        (&Interaction, &mut UiColor),
+        (&Interaction, &mut UiColor, Option<&MenuButton>),
         (Changed<Interaction>, With<Button>),
     >,
     mut resume_game_event: EventWriter<ResumeTheGameEvent>,
+    mut exit_game_event: EventWriter<ExitTheGameEvent>,
 ) {
-    for (interaction, mut color) in interaction_query.iter_mut() {
+    for (interaction, mut color, menu_button) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
                 *color = UiColor(PRESSED_BUTTON);
-                resume_game_event.send(ResumeTheGameEvent);
+                if let Some(menu_button) = menu_button {
+                    match menu_button.0 {
+                        MenuButtonType::Play => {
+                            resume_game_event.send(ResumeTheGameEvent);
+                        }
+                        MenuButtonType::Exit => {
+                            exit_game_event.send(ExitTheGameEvent);
+                        }
+                        _ => {}
+                    }
+                }
             }
             Interaction::Hovered => {
                 *color = UiColor(HOVERED_BUTTON);

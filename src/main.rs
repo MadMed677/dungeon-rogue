@@ -83,6 +83,8 @@ enum ApplicationState {
 pub struct PauseTheGameEvent;
 pub struct ResumeTheGameEvent;
 
+pub struct ExitTheGameEvent;
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -138,6 +140,7 @@ fn main() {
         .add_loopless_state(ApplicationState::Menu)
         .add_event::<PauseTheGameEvent>()
         .add_event::<ResumeTheGameEvent>()
+        .add_event::<ExitTheGameEvent>()
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)

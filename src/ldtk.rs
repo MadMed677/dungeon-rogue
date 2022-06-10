@@ -1,9 +1,9 @@
-use bevy::prelude::*;
+use bevy::{app::AppExit, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::plugin::RapierConfiguration;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, PauseTheGameEvent, ResumeTheGameEvent};
+use crate::{ApplicationState, ExitTheGameEvent, PauseTheGameEvent, ResumeTheGameEvent};
 
 pub struct GameLdtkPlugin;
 
@@ -53,7 +53,9 @@ fn change_game_state(
     mut commands: Commands,
     mut pause_game_event: EventReader<PauseTheGameEvent>,
     mut resume_game_event: EventReader<ResumeTheGameEvent>,
+    mut exit_game_event: EventReader<ExitTheGameEvent>,
     mut rapier_config: ResMut<RapierConfiguration>,
+    mut exit: EventWriter<AppExit>,
 ) {
     for _ in pause_game_event.iter() {
         commands.insert_resource(NextState(ApplicationState::Menu));
@@ -67,5 +69,9 @@ fn change_game_state(
 
         // Turn on the physics when we resume the game
         rapier_config.physics_pipeline_active = true;
+    }
+
+    for _ in exit_game_event.iter() {
+        exit.send(AppExit);
     }
 }
