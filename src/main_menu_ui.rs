@@ -72,7 +72,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         size: Size::new(Val::Percent(50.0), Val::Percent(95.0)),
                         flex_direction: FlexDirection::ColumnReverse,
                         justify_content: JustifyContent::SpaceBetween,
-                        // justify_content: JustifyContent::FlexStart,
                         border: Rect::all(Val::Px(5.0)),
                         align_content: AlignContent::Center,
                         ..Default::default()

@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.4] - 2022-06-10
+
+### Added
+- Add an ability to use main menu. When the user open the menu they may interact with `Play` and `Exit` buttons to play or exit the game respectively.
+
+### Removed
+- Remove an ability to jump in the air. Now the player may jump only once until it faced the surface.
+
+---
+
 ## [0.1.3] - 2022-06-06
 ![0.1.3](./docs/dungeon_rogue_0_1_3.gif)
 
@@ -7,6 +17,7 @@
 - Add Main Menu to pause and resume the game. For now it may only pause and resume the game. But every button just resume the game and now it's more fake.
 - Add `iyes_loopless` crate to manupulate with the game state. For now player and enemies spawns only when user enter the game in the first time. And when the user in the menu all systems which are related with player or enemy are not running anymore. It should help to manupulate with systems extendability because the logic has been written for the whole plugin but not for the each system.
 
+---
 
 ## [0.1.2] - 2022-06-02
 ![0.1.2](./docs/dungeon_rogue_0_1_2.gif)
@@ -24,9 +35,13 @@ Hopefully, now everything works fine.
 ### Removed
 - `sync_global_coords_with_local` system because `rapier` now works with `GlobalTransform`.
 
+---
+
 ## [0.1.1]
 ### Fixed
 - [debug] Update debug layer when dimensions are changed
+
+---
 
 ## [0.1.0]
 ![0.1.0](./docs/dungeon_rogue_0_1_0.gif)
