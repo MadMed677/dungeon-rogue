@@ -3,8 +3,10 @@ mod enemy;
 mod ldtk;
 mod main_menu_ui;
 mod map;
+mod movement_tutorial_ui;
 mod physics;
 mod player;
+mod tutorial;
 
 use std::collections::HashSet;
 
@@ -17,8 +19,10 @@ use enemy::EnemyPlugin;
 use ldtk::GameLdtkPlugin;
 use main_menu_ui::MainMenuUIPlugin;
 use map::MapPlugin;
+use movement_tutorial_ui::MovementTutorialUiPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
+use tutorial::TutorialPlugin;
 
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
@@ -69,6 +73,7 @@ struct SpriteAssetInfo {
 struct Sprites {
     pumpkin: SpriteAssetInfo,
     dragon: SpriteAssetInfo,
+    tutorial_movement: Handle<Image>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -124,6 +129,7 @@ fn setup(
             height: dragon_texture_height,
             texture: texture_atlases.add(dragon_texture_atlas),
         },
+        tutorial_movement: asset_server.load("atlas/keyboard_arrows.png"),
     });
 }
 
@@ -145,6 +151,8 @@ fn main() {
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)
         .add_plugin(MainMenuUIPlugin)
+        .add_plugin(TutorialPlugin)
+        .add_plugin(MovementTutorialUiPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)

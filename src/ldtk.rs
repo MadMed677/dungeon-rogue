@@ -24,9 +24,10 @@ impl Plugin for GameLdtkPlugin {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    asset_server.watch_for_changes().unwrap();
+
     commands.spawn_bundle(LdtkWorldBundle {
-        // ldtk_handle: asset_server.load("top_down_map.ldtk"),
-        ldtk_handle: asset_server.load("Typical_2D_platformer_example.ldtk"),
+        ldtk_handle: asset_server.load("Typical_2D_platformer_wip.ldtk"),
         ..Default::default()
     });
 }

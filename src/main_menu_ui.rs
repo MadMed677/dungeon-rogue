@@ -146,9 +146,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn destroy(mut commands: Commands, main_menu_ui_query: Query<Entity, With<MainMenuUI>>) {
-    if let Ok(main_menu_entity) = main_menu_ui_query.get_single() {
-        commands.entity(main_menu_entity).despawn_recursive();
-    }
+    let main_menu_entity = main_menu_ui_query.single();
+
+    commands.entity(main_menu_entity).despawn_recursive();
 }
 
 fn button_interaction(
