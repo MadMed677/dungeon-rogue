@@ -1,9 +1,9 @@
-use bevy::{prelude::*, render::camera::Camera2d};
+use bevy::prelude::*;
 use bevy_ecs_ldtk::LevelSelection;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    tutorial::{Tutorial, TutorialType},
+    tutorial::{Tutorial, TutorialPassed, TutorialType},
     ApplicationState, Sprites,
 };
 
@@ -17,7 +17,10 @@ fn setup(
     sprites: Res<Sprites>,
     asset_server: Res<AssetServer>,
     level_selection: Res<LevelSelection>,
-    mut tutorial_query: Query<(Entity, &TutorialType, &Transform, &mut Tutorial), Added<Tutorial>>,
+    mut tutorial_query: Query<
+        (&TutorialType, &mut Tutorial, &TutorialPassed),
+        Changed<TutorialPassed>,
+    >,
 ) {
     if let LevelSelection::Uid(current_level) = level_selection.as_ref() {
         // We would like to place movement tutorial only on the first level
@@ -25,30 +28,28 @@ fn setup(
             return;
         }
 
-        for (tutorial_entity, tutorial_type, transform, mut tutorial) in tutorial_query.iter_mut() {
-            println!("tutorial_type: {:?}", tutorial_type);
-            println!("transform: {:?}", transform.translation);
+        // @todo: We should use tutorial type to visualize
+        //  different sprites as a tutorial
+        for (_, mut tutorial, tutorial_triggered) in tutorial_query.iter_mut() {
+            // If tutorial has been triggered let's return
+            if tutorial_triggered.0 == false {
+                return;
+            }
 
             // Create a tutorial UI
             let ui_entity = commands
                 .spawn_bundle(NodeBundle {
                     style: Style {
-                        position_type: PositionType::Relative,
+                        position_type: PositionType::Absolute,
                         position: Rect {
-                            left: Val::Px(transform.translation.x * 2.0),
-                            bottom: Val::Px(transform.translation.y * 2.0),
+                            right: Val::Px(50.0),
+                            top: Val::Px(50.0),
                             ..Default::default()
                         },
-                        // position: Rect {
-                        //     left: Val::Px(250.0),
-                        //     bottom: Val::Px(250.0),
-                        //     ..Default::default()
-                        // },
                         size: Size::new(Val::Px(100.0), Val::Px(100.0)),
                         flex_direction: FlexDirection::ColumnReverse,
                         ..Default::default()
                     },
-                    transform: *transform,
                     color: Color::rgba(0.5, 0.5, 0.5, 0.2).into(),
                     ..Default::default()
                 })
@@ -62,7 +63,6 @@ fn setup(
                                 align_items: AlignItems::Center,
                                 ..Default::default()
                             },
-                            // color: Color::rgb(1.0, 0.0, 0.0).into(),
                             color: Color::NONE.into(),
                             ..Default::default()
                         })
@@ -101,7 +101,6 @@ fn setup(
                                     ..Default::default()
                                 },
                                 image: sprites.tutorial_movement.clone().into(),
-                                // transform: Transform::from_xyz(200.0, 400.0, 2.0),
                                 ..Default::default()
                             });
                         });
@@ -130,10 +129,11 @@ impl Plugin for MovementTutorialUiPlugin {
         app.add_system_set(
             ConditionSet::new()
                 .run_in_state(ApplicationState::Game)
-                // .with_system(shift_movement_tutorial)
+                .with_system(setup)
+                // .with_system(change_tutorial_visibility)
                 .into(),
         )
-        .add_enter_system(ApplicationState::Game, setup)
+        // .add_enter_system(ApplicationState::Game, setup)
         .add_exit_system(ApplicationState::Game, destroy);
     }
 }

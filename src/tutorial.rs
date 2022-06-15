@@ -33,7 +33,7 @@ impl Default for TutorialTypeOptions {
 pub struct TutorialType(TutorialTypeOptions);
 
 #[derive(Component, Debug, Default, Eq, PartialEq, Inspectable)]
-pub struct TutorialPassed(bool);
+pub struct TutorialPassed(pub bool);
 
 impl From<EntityInstance> for TutorialType {
     fn from(entity_instance: EntityInstance) -> Self {
@@ -94,7 +94,8 @@ fn spawn_tutorial(
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert_bundle(SpriteBundle {
                 sprite: Sprite {
-                    color: Color::rgb(0.1, 0.1, 0.1),
+                    color: Color::NONE,
+                    // color: Color::rgb(0.1, 0.1, 0.1),
                     custom_size: Some(Vec2::new(16.0, 16.0)),
                     ..Default::default()
                 },
