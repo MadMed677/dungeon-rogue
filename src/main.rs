@@ -3,7 +3,6 @@ mod enemy;
 mod ldtk;
 mod main_menu_ui;
 mod map;
-mod movement_tutorial_ui;
 mod physics;
 mod player;
 mod tutorial;
@@ -19,7 +18,6 @@ use enemy::EnemyPlugin;
 use ldtk::GameLdtkPlugin;
 use main_menu_ui::MainMenuUIPlugin;
 use map::MapPlugin;
-use movement_tutorial_ui::MovementTutorialUiPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use tutorial::TutorialPlugin;
@@ -152,7 +150,6 @@ fn main() {
         .add_startup_system(setup)
         .add_plugin(MainMenuUIPlugin)
         .add_plugin(TutorialPlugin)
-        .add_plugin(MovementTutorialUiPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)

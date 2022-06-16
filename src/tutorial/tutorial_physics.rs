@@ -8,7 +8,7 @@ use iyes_loopless::prelude::*;
 
 use crate::ApplicationState;
 
-pub struct TutorialPlugin;
+pub struct TutorialPhysicsPlugin;
 
 /// A Tutorial component which has
 ///  many UI's entities
@@ -87,6 +87,11 @@ fn spawn_tutorial(
         commands
             .entity(tutorial_entity)
             .insert(Sensor(true))
+            /*
+                We should place the same width and height as it described in LDtk
+                At least for now I have no idea how to take this data from the LDtk
+                But I'm sure that it's doable
+            */
             .insert(Collider::cuboid(30.0, 8.0))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert_bundle(SpriteBundle {
@@ -142,7 +147,7 @@ fn tutorial_interaction_detection(
     }
 }
 
-impl Plugin for TutorialPlugin {
+impl Plugin for TutorialPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             ConditionSet::new()

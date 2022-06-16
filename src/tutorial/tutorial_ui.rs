@@ -2,15 +2,13 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::LevelSelection;
 use iyes_loopless::prelude::*;
 
-use crate::{
-    tutorial::{Tutorial, TutorialPassed, TutorialType},
-    ApplicationState, Sprites,
-};
+use crate::tutorial::tutorial_physics::{Tutorial, TutorialPassed, TutorialType};
+use crate::{ApplicationState, Sprites};
 
 #[derive(Component)]
 struct MovementTutorialUi;
 
-pub struct MovementTutorialUiPlugin;
+pub struct TutorialUiPlugin;
 
 fn spawn_movement_ui(
     commands: &mut Commands,
@@ -135,7 +133,7 @@ fn destroy(
     }
 }
 
-impl Plugin for MovementTutorialUiPlugin {
+impl Plugin for TutorialUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             ConditionSet::new()
