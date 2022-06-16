@@ -12,6 +12,87 @@ struct MovementTutorialUi;
 
 pub struct MovementTutorialUiPlugin;
 
+fn spawn_movement_ui(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    sprites: &Res<Sprites>,
+    tutorial_type: &TutorialType,
+) -> Entity {
+    commands
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    left: Val::Px(50.0),
+                    top: Val::Px(50.0),
+                    ..Default::default()
+                },
+                size: Size::new(Val::Px(100.0), Val::Px(100.0)),
+                flex_direction: FlexDirection::ColumnReverse,
+                ..Default::default()
+            },
+            color: Color::rgba(0.5, 0.5, 0.5, 0.2).into(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            // Render a div to place the text
+            parent
+                .spawn_bundle(NodeBundle {
+                    style: Style {
+                        size: Size::new(Val::Percent(100.0), Val::Percent(40.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..Default::default()
+                    },
+                    color: Color::NONE.into(),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            match tutorial_type {
+                                TutorialType::Movement => "Movement",
+                                TutorialType::Climbing => "Climbing",
+                            },
+                            TextStyle {
+                                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                                font_size: 16.0,
+                                color: Color::WHITE,
+                            },
+                            Default::default(),
+                        ),
+                        ..Default::default()
+                    });
+                });
+
+            // Render a div to place the keyboard movement image
+            parent
+                .spawn_bundle(NodeBundle {
+                    style: Style {
+                        size: Size::new(Val::Percent(100.0), Val::Percent(60.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..Default::default()
+                    },
+                    // color: Color::rgb(0.0, 1.0, 0.0).into(),
+                    color: Color::NONE.into(),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn_bundle(ImageBundle {
+                        style: Style {
+                            size: Size::new(Val::Auto, Val::Percent(90.0)),
+                            ..Default::default()
+                        },
+                        image: sprites.tutorial_movement.clone().into(),
+                        ..Default::default()
+                    });
+                });
+        })
+        .insert(MovementTutorialUi)
+        .id()
+}
+
 fn setup(
     mut commands: Commands,
     sprites: Res<Sprites>,
@@ -28,87 +109,17 @@ fn setup(
             return;
         }
 
-        // @todo: We should use tutorial type to visualize
-        //  different sprites as a tutorial
-        for (_, mut tutorial, tutorial_triggered) in tutorial_query.iter_mut() {
+        for (tutorial_type, mut tutorial, tutorial_triggered) in tutorial_query.iter_mut() {
             // If tutorial has been triggered let's return
             if tutorial_triggered.0 == false {
                 return;
             }
 
             // Create a tutorial UI
-            let ui_entity = commands
-                .spawn_bundle(NodeBundle {
-                    style: Style {
-                        position_type: PositionType::Absolute,
-                        position: Rect {
-                            right: Val::Px(50.0),
-                            top: Val::Px(50.0),
-                            ..Default::default()
-                        },
-                        size: Size::new(Val::Px(100.0), Val::Px(100.0)),
-                        flex_direction: FlexDirection::ColumnReverse,
-                        ..Default::default()
-                    },
-                    color: Color::rgba(0.5, 0.5, 0.5, 0.2).into(),
-                    ..Default::default()
-                })
-                .with_children(|parent| {
-                    // Render a div to place the text
-                    parent
-                        .spawn_bundle(NodeBundle {
-                            style: Style {
-                                size: Size::new(Val::Percent(100.0), Val::Percent(40.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..Default::default()
-                            },
-                            color: Color::NONE.into(),
-                            ..Default::default()
-                        })
-                        .with_children(|parent| {
-                            parent.spawn_bundle(TextBundle {
-                                text: Text::with_section(
-                                    "Movement",
-                                    TextStyle {
-                                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                                        font_size: 16.0,
-                                        color: Color::WHITE,
-                                    },
-                                    Default::default(),
-                                ),
-                                ..Default::default()
-                            });
-                        });
+            let movement_tutorial_ui =
+                spawn_movement_ui(&mut commands, &asset_server, &sprites, &tutorial_type);
 
-                    // Render a div to place the keyboard movement image
-                    parent
-                        .spawn_bundle(NodeBundle {
-                            style: Style {
-                                size: Size::new(Val::Percent(100.0), Val::Percent(60.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..Default::default()
-                            },
-                            // color: Color::rgb(0.0, 1.0, 0.0).into(),
-                            color: Color::NONE.into(),
-                            ..Default::default()
-                        })
-                        .with_children(|parent| {
-                            parent.spawn_bundle(ImageBundle {
-                                style: Style {
-                                    size: Size::new(Val::Auto, Val::Percent(90.0)),
-                                    ..Default::default()
-                                },
-                                image: sprites.tutorial_movement.clone().into(),
-                                ..Default::default()
-                            });
-                        });
-                })
-                .insert(MovementTutorialUi)
-                .id();
-
-            tutorial.ui_entities.insert(ui_entity);
+            tutorial.ui_entities.insert(movement_tutorial_ui);
         }
     }
 }

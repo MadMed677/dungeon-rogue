@@ -1453,7 +1453,7 @@
 			"identifier": "Tutorial",
 			"uid": 107,
 			"tags": [],
-			"width": 16,
+			"width": 60,
 			"height": 16,
 			"resizableX": false,
 			"resizableY": false,
@@ -1776,16 +1776,16 @@
 						},
 						{
 							"__identifier": "Tutorial",
-							"__grid": [14,12],
+							"__grid": [10,12],
 							"__pivot": [0.5,1],
 							"__tags": [],
 							"__tile": null,
 							"__smartColor": "#94D9B3",
 							"iid": "235482a0-dbe0-11ec-a80d-85e74bf25c7e",
-							"width": 16,
+							"width": 60,
 							"height": 16,
 							"defUid": 107,
-							"px": [232,208],
+							"px": [168,208],
 							"fieldInstances": [
 								{ "__identifier": "passed", "__value": false, "__type": "Bool", "__tile": null, "defUid": 108, "realEditorValues": [] },
 								{ "__identifier": "tutorial_type", "__value": "Movement", "__type": "LocalEnum.Tutorial_type", "__tile": null, "defUid": 110, "realEditorValues": [{
@@ -1796,16 +1796,16 @@
 						},
 						{
 							"__identifier": "Tutorial",
-							"__grid": [25,13],
+							"__grid": [23,17],
 							"__pivot": [0.5,1],
 							"__tags": [],
 							"__tile": null,
 							"__smartColor": "#94D9B3",
 							"iid": "71553ad0-dbe0-11ec-a80d-c72f00651726",
-							"width": 16,
+							"width": 60,
 							"height": 16,
 							"defUid": 107,
-							"px": [408,224],
+							"px": [376,288],
 							"fieldInstances": [
 								{ "__identifier": "passed", "__value": false, "__type": "Bool", "__tile": null, "defUid": 108, "realEditorValues": [] },
 								{ "__identifier": "tutorial_type", "__value": "Climbing", "__type": "LocalEnum.Tutorial_type", "__tile": null, "defUid": 110, "realEditorValues": [{

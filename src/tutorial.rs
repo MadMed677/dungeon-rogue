@@ -17,20 +17,17 @@ pub struct Tutorial {
     pub ui_entities: HashSet<Entity>,
 }
 
-#[derive(Debug, Eq, PartialEq, Inspectable)]
-enum TutorialTypeOptions {
+#[derive(Component, Debug, Eq, PartialEq, Inspectable)]
+pub enum TutorialType {
     Movement,
     Climbing,
 }
 
-impl Default for TutorialTypeOptions {
+impl Default for TutorialType {
     fn default() -> Self {
         Self::Movement
     }
 }
-
-#[derive(Component, Debug, Default, Eq, PartialEq, Inspectable)]
-pub struct TutorialType(TutorialTypeOptions);
 
 #[derive(Component, Debug, Default, Eq, PartialEq, Inspectable)]
 pub struct TutorialPassed(pub bool);
@@ -44,8 +41,8 @@ impl From<EntityInstance> for TutorialType {
         {
             let tutorial_type_option = match &field_instance.value {
                 FieldValue::Enum(val) => match val.as_deref() {
-                    Some("Movement") => TutorialTypeOptions::Movement,
-                    Some("Climbing") => TutorialTypeOptions::Climbing,
+                    Some("Movement") => TutorialType::Movement,
+                    Some("Climbing") => TutorialType::Climbing,
                     _ => {
                         panic!("This is impossible option");
                     }
@@ -55,7 +52,7 @@ impl From<EntityInstance> for TutorialType {
                 }
             };
 
-            return Self(tutorial_type_option);
+            return tutorial_type_option;
         }
 
         panic!("Cound'n find any available options. Please check Ldtk map `tutarial_type` enum");
@@ -90,7 +87,7 @@ fn spawn_tutorial(
         commands
             .entity(tutorial_entity)
             .insert(Sensor(true))
-            .insert(Collider::cuboid(8.0, 8.0))
+            .insert(Collider::cuboid(30.0, 8.0))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert_bundle(SpriteBundle {
                 sprite: Sprite {
