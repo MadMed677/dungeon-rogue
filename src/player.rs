@@ -70,8 +70,8 @@ impl Plugin for PlayerPlugin {
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(change_player_texture)
-                // .with_system(spawn_ground_sensor)
-                // .with_system(ground_detection)
+                .with_system(spawn_ground_sensor)
+                .with_system(ground_detection)
                 .into(),
         )
         .register_ldtk_entity::<PlayerBundle>("Player");
@@ -132,7 +132,7 @@ fn spawn_player(
                 intersaction_elements: HashSet::new(),
                 climbing: false,
             })
-            .insert(GroundDetection { on_ground: true })
+            .insert(GroundDetection { on_ground: false })
             .insert(Speed(120.0));
     }
 }
