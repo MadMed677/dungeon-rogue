@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.5] - 2022-06-21
+
+### Added
+- Add movement tutorial. When we show a UI on the top-left screen. And we're leading the user of how to move and climb
+
+### Faced bug
+User couldn't jump on new levels. But ground detection
+works fine for current levels. Maybe the problem inside
+how the levels has been created or how ground detection
+checks new loaded levels.
+
+I'll try to play with it and fix it in the next release.
+
 ## [0.1.4] - 2022-06-10
 
 ### Added
