@@ -10,7 +10,7 @@
 	},
 	"jsonVersion": "1.1.3",
 	"appBuildId": 458364,
-	"nextUid": 111,
+	"nextUid": 113,
 	"identifierStyle": "Capitalize",
 	"worldLayout": "Free",
 	"worldGridWidth": 256,
@@ -1388,6 +1388,35 @@
 					"allowedRefs": "OnlySame",
 					"allowedRefTags": [],
 					"tilesetUid": null
+				},
+				{
+					"identifier": "enemy_type",
+					"__type": "LocalEnum.Enemy_type",
+					"uid": 112,
+					"type": "F_Enum(111)",
+					"isArray": false,
+					"canBeNull": false,
+					"arrayMinLength": null,
+					"arrayMaxLength": null,
+					"editorDisplayMode": "Hidden",
+					"editorDisplayPos": "Above",
+					"editorAlwaysShow": false,
+					"editorCutLongValues": true,
+					"editorTextSuffix": null,
+					"editorTextPrefix": null,
+					"useForSmartColor": false,
+					"min": null,
+					"max": null,
+					"regex": null,
+					"acceptFileTypes": null,
+					"defaultOverride": null,
+					"textLanguageMode": null,
+					"symmetricalRef": false,
+					"autoChainRef": true,
+					"allowOutOfLevelRef": true,
+					"allowedRefs": "OnlySame",
+					"allowedRefTags": [],
+					"tilesetUid": null
 				}
 			]
 		},
@@ -1612,7 +1641,8 @@
 			{ "id": "Movement", "tileId": null, "color": 0, "__tileSrcRect": null },
 			{ "id": "Jumping", "tileId": null, "color": 0, "__tileSrcRect": null },
 			{ "id": "Climbing", "tileId": null, "color": 0, "__tileSrcRect": null }
-		], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }
+		], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
+		{ "identifier": "Enemy_type", "uid": 111, "values": [ { "id": "Durt", "tileId": null, "color": 0, "__tileSrcRect": null }, { "id": "LongHair", "tileId": null, "color": 0, "__tileSrcRect": null } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }
 	], "externalEnums": [], "levelFields": [] },
 	"levels": [
 		{
@@ -1723,6 +1753,10 @@
 								{ "__identifier": "patrol", "__value": [{ "cx": 32, "cy": 9 }], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["32,9"]
+								}] },
+								{ "__identifier": "enemy_type", "__value": "LongHair", "__type": "LocalEnum.Enemy_type", "__tile": null, "defUid": 112, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["LongHair"]
 								}] }
 							]
 						},
@@ -1743,6 +1777,10 @@
 								{ "__identifier": "patrol", "__value": [{ "cx": 26, "cy": 17 }], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["26,17"]
+								}] },
+								{ "__identifier": "enemy_type", "__value": "Durt", "__type": "LocalEnum.Enemy_type", "__tile": null, "defUid": 112, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Durt"]
 								}] }
 							]
 						},
@@ -3365,6 +3403,10 @@
 								{ "__identifier": "patrol", "__value": [{ "cx": 22, "cy": 14 }], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["22,14"]
+								}] },
+								{ "__identifier": "enemy_type", "__value": "LongHair", "__type": "LocalEnum.Enemy_type", "__tile": null, "defUid": 112, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["LongHair"]
 								}] }
 							]
 						},
@@ -3385,6 +3427,10 @@
 								{ "__identifier": "patrol", "__value": [{ "cx": 23, "cy": 20 }], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["23,20"]
+								}] },
+								{ "__identifier": "enemy_type", "__value": "Durt", "__type": "LocalEnum.Enemy_type", "__tile": null, "defUid": 112, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Durt"]
 								}] }
 							]
 						},
@@ -3408,7 +3454,11 @@
 									"id": "V_String",
 									"params": ["Healing_Plant"]
 								} ] },
-								{ "__identifier": "patrol", "__value": [], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [] }
+								{ "__identifier": "patrol", "__value": [], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [] },
+								{ "__identifier": "enemy_type", "__value": "Durt", "__type": "LocalEnum.Enemy_type", "__tile": null, "defUid": 112, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Durt"]
+								}] }
 							]
 						},
 						{
@@ -4719,6 +4769,10 @@
 								{ "__identifier": "patrol", "__value": [{ "cx": 11, "cy": 10 }], "__type": "Array<Point>", "__tile": null, "defUid": 55, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["11,10"]
+								}] },
+								{ "__identifier": "enemy_type", "__value": "Durt", "__type": "LocalEnum.Enemy_type", "__tile": null, "defUid": 112, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Durt"]
 								}] }
 							]
 						}

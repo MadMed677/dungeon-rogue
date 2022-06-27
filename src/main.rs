@@ -68,9 +68,15 @@ struct SpriteAssetInfo {
     texture: Handle<TextureAtlas>,
 }
 
+struct Monsters {
+    gray: SpriteAssetInfo,
+    long: SpriteAssetInfo,
+}
+
 struct Sprites {
     pumpkin: SpriteAssetInfo,
     dragon: SpriteAssetInfo,
+    monsters: Monsters,
     tutorial_movement: Handle<Image>,
 }
 
@@ -116,6 +122,29 @@ fn setup(
         1,
     );
 
+    let gray_monster_texture_width = 16.0;
+    let gray_monster_texture_height = 16.0;
+    let gray_monster_texture_handle = asset_server.load("atlas/gray_monster.png");
+    let gray_monster_texture_atlas = TextureAtlas::from_grid(
+        gray_monster_texture_handle,
+        Vec2::new(gray_monster_texture_width, gray_monster_texture_height),
+        4,
+        1,
+    );
+
+    let long_green_monster_texture_width = 15.0;
+    let long_green_monster_texture_height = 16.0;
+    let long_green_monster_texture_handle = asset_server.load("atlas/long_hair_monster.png");
+    let long_green_monster_texture_atlas = TextureAtlas::from_grid(
+        long_green_monster_texture_handle,
+        Vec2::new(
+            long_green_monster_texture_width,
+            long_green_monster_texture_height,
+        ),
+        4,
+        1,
+    );
+
     commands.insert_resource(Sprites {
         pumpkin: SpriteAssetInfo {
             width: pumpkin_texture_width,
@@ -126,6 +155,18 @@ fn setup(
             width: dragon_texture_width,
             height: dragon_texture_height,
             texture: texture_atlases.add(dragon_texture_atlas),
+        },
+        monsters: Monsters {
+            gray: SpriteAssetInfo {
+                width: gray_monster_texture_width,
+                height: gray_monster_texture_height,
+                texture: texture_atlases.add(gray_monster_texture_atlas),
+            },
+            long: SpriteAssetInfo {
+                width: long_green_monster_texture_width,
+                height: long_green_monster_texture_height,
+                texture: texture_atlases.add(long_green_monster_texture_atlas),
+            },
         },
         tutorial_movement: asset_server.load("atlas/keyboard_arrows.png"),
     });

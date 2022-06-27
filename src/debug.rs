@@ -5,7 +5,7 @@ use bevy_rapier2d::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 
-use crate::enemy::Enemy;
+use crate::enemy::{Enemy, EnemyType};
 use crate::player::Player;
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
 use crate::{Climbable, Speed};
@@ -16,7 +16,7 @@ pub struct DebugPlugin;
 struct Inspector {
     player: InspectorQuerySingle<Entity, With<Player>>,
     tutorials: InspectorQuery<Entity, With<Tutorial>>,
-    buttons: InspectorQuery<Entity, With<Button>>,
+    enemies: InspectorQuery<Entity, With<Enemy>>,
 }
 
 impl Plugin for DebugPlugin {
@@ -31,6 +31,7 @@ impl Plugin for DebugPlugin {
                 .register_inspectable::<Name>()
                 .register_inspectable::<TutorialPassed>()
                 .register_inspectable::<TutorialType>()
+                .register_inspectable::<EnemyType>()
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())
                 .add_system_to_stage(DEBUG, debug_collisions)
                 .add_system_to_stage(DEBUG, update_debug_collisions)
