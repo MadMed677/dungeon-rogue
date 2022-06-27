@@ -68,16 +68,24 @@ struct SpriteAssetInfo {
     texture: Handle<TextureAtlas>,
 }
 
-struct Monsters {
+struct PlayerSprites {
+    pumpkin: SpriteAssetInfo,
+    dragon: SpriteAssetInfo,
+}
+
+struct MonstersSprites {
     gray: SpriteAssetInfo,
     long: SpriteAssetInfo,
 }
 
+struct TutorialSprites {
+    movement: Handle<Image>,
+}
+
 struct Sprites {
-    pumpkin: SpriteAssetInfo,
-    dragon: SpriteAssetInfo,
-    monsters: Monsters,
-    tutorial_movement: Handle<Image>,
+    player: PlayerSprites,
+    monsters: MonstersSprites,
+    tutorial: TutorialSprites,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -104,7 +112,7 @@ fn setup(
 
     let pumpkin_texture_width = 16.0;
     let pumpkin_texture_height = 24.0;
-    let pumpkin_texture_handle = asset_server.load("atlas/pumpkin_dude_16_24.png");
+    let pumpkin_texture_handle = asset_server.load("atlas/player/pumpkin_dude_16_24.png");
     let pumpkin_texture_atlas = TextureAtlas::from_grid(
         pumpkin_texture_handle,
         Vec2::new(pumpkin_texture_width, pumpkin_texture_height),
@@ -114,7 +122,7 @@ fn setup(
 
     let dragon_texture_width = 16.0;
     let dragon_texture_height = 22.0;
-    let dragon_texture_handle = asset_server.load("atlas/dragon_dude_16_22.png");
+    let dragon_texture_handle = asset_server.load("atlas/player/dragon_dude_16_22.png");
     let dragon_texture_atlas = TextureAtlas::from_grid(
         dragon_texture_handle,
         Vec2::new(dragon_texture_width, dragon_texture_height),
@@ -124,7 +132,7 @@ fn setup(
 
     let gray_monster_texture_width = 16.0;
     let gray_monster_texture_height = 16.0;
-    let gray_monster_texture_handle = asset_server.load("atlas/gray_monster.png");
+    let gray_monster_texture_handle = asset_server.load("atlas/enemies/gray_monster.png");
     let gray_monster_texture_atlas = TextureAtlas::from_grid(
         gray_monster_texture_handle,
         Vec2::new(gray_monster_texture_width, gray_monster_texture_height),
@@ -134,7 +142,8 @@ fn setup(
 
     let long_green_monster_texture_width = 15.0;
     let long_green_monster_texture_height = 16.0;
-    let long_green_monster_texture_handle = asset_server.load("atlas/long_hair_monster.png");
+    let long_green_monster_texture_handle =
+        asset_server.load("atlas/enemies/long_hair_monster.png");
     let long_green_monster_texture_atlas = TextureAtlas::from_grid(
         long_green_monster_texture_handle,
         Vec2::new(
@@ -146,17 +155,19 @@ fn setup(
     );
 
     commands.insert_resource(Sprites {
-        pumpkin: SpriteAssetInfo {
-            width: pumpkin_texture_width,
-            height: pumpkin_texture_height,
-            texture: texture_atlases.add(pumpkin_texture_atlas),
+        player: PlayerSprites {
+            pumpkin: SpriteAssetInfo {
+                width: pumpkin_texture_width,
+                height: pumpkin_texture_height,
+                texture: texture_atlases.add(pumpkin_texture_atlas),
+            },
+            dragon: SpriteAssetInfo {
+                width: dragon_texture_width,
+                height: dragon_texture_height,
+                texture: texture_atlases.add(dragon_texture_atlas),
+            },
         },
-        dragon: SpriteAssetInfo {
-            width: dragon_texture_width,
-            height: dragon_texture_height,
-            texture: texture_atlases.add(dragon_texture_atlas),
-        },
-        monsters: Monsters {
+        monsters: MonstersSprites {
             gray: SpriteAssetInfo {
                 width: gray_monster_texture_width,
                 height: gray_monster_texture_height,
@@ -168,7 +179,9 @@ fn setup(
                 texture: texture_atlases.add(long_green_monster_texture_atlas),
             },
         },
-        tutorial_movement: asset_server.load("atlas/keyboard_arrows.png"),
+        tutorial: TutorialSprites {
+            movement: asset_server.load("atlas/tutorial/keyboard_arrows.png"),
+        },
     });
 }
 

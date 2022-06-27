@@ -82,7 +82,7 @@ fn spawn_movement_ui(
                             size: Size::new(Val::Auto, Val::Percent(90.0)),
                             ..Default::default()
                         },
-                        image: sprites.tutorial_movement.clone().into(),
+                        image: sprites.tutorial.movement.clone().into(),
                         ..Default::default()
                     });
                 });

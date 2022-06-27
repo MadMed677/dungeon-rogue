@@ -84,7 +84,7 @@ fn spawn_player(
     player_query: Query<(Entity, &Transform), Added<Player>>,
 ) {
     if let Ok((player_entity, transform)) = player_query.get_single() {
-        let sprite_asset_info = &materials.pumpkin;
+        let sprite_asset_info = &materials.player.pumpkin;
 
         let sprite_width = sprite_asset_info.width;
         let sprite_height = sprite_asset_info.height;
@@ -395,12 +395,12 @@ fn change_player_texture(
                 PlayerNames::Pumpkin => {
                     player_name.0 = PlayerNames::Dragon;
 
-                    &materials.dragon
+                    &materials.player.dragon
                 }
                 PlayerNames::Dragon => {
                     player_name.0 = PlayerNames::Pumpkin;
 
-                    &materials.pumpkin
+                    &materials.player.pumpkin
                 }
             };
 
