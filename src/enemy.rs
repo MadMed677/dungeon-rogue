@@ -57,11 +57,13 @@ fn enemy_patrol(
             &mut Velocity,
             &mut Patrol,
             &mut MovementDirection,
+            &mut TextureAtlasSprite,
         ),
         With<Enemy>,
     >,
 ) {
-    for (transform, mut velocity, mut patrol, mut direction) in patrol_query.iter_mut() {
+    for (transform, mut velocity, mut patrol, mut direction, mut sprite) in patrol_query.iter_mut()
+    {
         // Do nothing if we have no patrol or it's equal to 1
         if patrol.points.len() <= 1 {
             continue;
@@ -74,15 +76,20 @@ fn enemy_patrol(
 
         let mut new_velocity = Vec2::new(new_velocity_3d.x, new_velocity_3d.y);
 
+        if new_velocity.x > 0.0 {
+            *direction = MovementDirection::Right;
+            sprite.flip_x = false;
+        } else {
+            *direction = MovementDirection::Left;
+            sprite.flip_x = true;
+        }
+
         if new_velocity.dot(velocity.linvel) < 0.0 {
             if patrol.index == 0 {
                 *direction = MovementDirection::Right;
             } else if patrol.index == patrol.points.len() - 1 {
                 *direction = MovementDirection::Left;
             }
-
-            // transform.translation.x = patrol.points[patrol.index].x;
-            // transform.translation.y = patrol.points[patrol.index].y;
 
             if *direction == MovementDirection::Right {
                 patrol.index += 1;
@@ -115,9 +122,17 @@ fn ldtk_pixel_coords_to_translation_pivoted(
     pivot_point + offset
 }
 
+/// Describes patrolling for an enemy
+/// E.g. movement on the map
 #[derive(Debug, Component, Inspectable)]
 pub struct Patrol {
+    /// Points which describes when the monster should stop
+    /// Describes the main points for patroling
     pub points: Vec<Vec2>,
+
+    /// Describes current index in points.
+    /// The index should be inside `points.len()` because
+    /// `index` is index inside points vector
     pub index: usize,
 }
 
@@ -213,6 +228,7 @@ fn spawn_enemy(
             .insert(LockedAxes::ROTATION_LOCKED)
             .insert(Velocity::zero())
             .insert(Friction::new(3.0))
+            // Set a default movement direction in on right. We will change it later in the system
             .insert(MovementDirection::Right)
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: enemy_material.texture.clone(),
