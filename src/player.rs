@@ -6,9 +6,7 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{
-    ApplicationState, Climbable, Climber, MovementDirection, MovementTendency, Speed, Sprites,
-};
+use crate::{ApplicationState, Climbable, Climber, MovementDirection, Speed, Sprites};
 
 #[derive(Debug, Inspectable)]
 enum PlayerNames {
@@ -89,7 +87,7 @@ fn spawn_player(
         let sprite_width = sprite_asset_info.width;
         let sprite_height = sprite_asset_info.height;
 
-        let player_direction = MovementTendency::Right;
+        let player_direction = MovementDirection::Right;
 
         commands
             .entity(player_entity)
@@ -114,15 +112,15 @@ fn spawn_player(
                 },
                 sprite: TextureAtlasSprite {
                     flip_x: match &player_direction {
-                        MovementTendency::Left => true,
-                        MovementTendency::Right => false,
+                        MovementDirection::Left => true,
+                        MovementDirection::Right => false,
                     },
                     ..Default::default()
                 },
                 ..Default::default()
             })
             .insert(PlayerName(PlayerNames::Pumpkin))
-            .insert(MovementDirection(player_direction))
+            .insert(player_direction)
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
@@ -180,10 +178,10 @@ fn player_movement(
 
         // Change player direction
         if move_delta_x > 0.0 {
-            direction.0 = MovementTendency::Right;
+            *direction = MovementDirection::Right;
             sprite.flip_x = false;
         } else if move_delta_x < 0.0 {
-            direction.0 = MovementTendency::Left;
+            *direction = MovementDirection::Left;
             sprite.flip_x = true;
         }
 

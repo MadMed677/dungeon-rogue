@@ -50,8 +50,8 @@ impl From<EntityInstance> for EnemyType {
     }
 }
 
-fn enemy_patrol(mut patrol_query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
-    for (mut transform, mut velocity, mut patrol) in patrol_query.iter_mut() {
+fn enemy_patrol(mut patrol_query: Query<(&Transform, &mut Velocity, &mut Patrol)>) {
+    for (transform, mut velocity, mut patrol) in patrol_query.iter_mut() {
         // Do nothing if we have no patrol or it's equal to 1
         if patrol.points.len() <= 1 {
             continue;

@@ -25,14 +25,11 @@ use tutorial::TutorialPlugin;
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
 
-#[derive(Inspectable)]
-enum MovementTendency {
+#[derive(Component, Inspectable)]
+enum MovementDirection {
     Left,
     Right,
 }
-
-#[derive(Component, Inspectable)]
-pub struct MovementDirection(MovementTendency);
 
 #[derive(Component, Copy, Clone, Debug, Default)]
 /// Describes that this element
