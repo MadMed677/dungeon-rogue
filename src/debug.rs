@@ -8,7 +8,7 @@ use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 use crate::enemy::{Enemy, EnemyType, Patrol};
 use crate::player::Player;
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
-use crate::{Climbable, Speed};
+use crate::{Climbable, MovementDirection, Speed};
 
 pub struct DebugPlugin;
 
@@ -31,6 +31,7 @@ impl Plugin for DebugPlugin {
                 .register_inspectable::<Name>()
                 .register_inspectable::<TutorialPassed>()
                 .register_inspectable::<TutorialType>()
+                .register_inspectable::<MovementDirection>()
                 .register_inspectable::<EnemyType>()
                 .register_inspectable::<Patrol>()
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())

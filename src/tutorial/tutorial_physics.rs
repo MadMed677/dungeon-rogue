@@ -6,7 +6,7 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::ApplicationState;
+use crate::{player::Player, ApplicationState};
 
 pub struct TutorialPhysicsPlugin;
 
@@ -111,36 +111,47 @@ fn tutorial_interaction_detection(
     mut commands: Commands,
     mut collisions: EventReader<CollisionEvent>,
     mut tutorials_query: Query<(Entity, &mut TutorialPassed, &Tutorial), With<Tutorial>>,
+    player_query: Query<With<Player>>,
 ) {
     for collision in collisions.iter() {
         match collision {
             CollisionEvent::Started(collider_a, collider_b, _) => {
                 if let Ok((_, mut tutorial_active, _)) = tutorials_query.get_mut(*collider_a) {
-                    tutorial_active.0 = true;
+                    if player_query.get(*collider_b).is_ok() {
+                        tutorial_active.0 = true;
+                    }
                 } else if let Ok((_, mut tutorial_active, _)) = tutorials_query.get_mut(*collider_b)
                 {
-                    tutorial_active.0 = true;
+                    if player_query.get(*collider_a).is_ok() {
+                        tutorial_active.0 = true;
+                    }
                 }
             }
 
             CollisionEvent::Stopped(collider_a, collider_b, _) => {
                 if let Ok((tutorial_entity, _, tutorial)) = tutorials_query.get(*collider_a) {
-                    // Dispawn all UI related entities into this entity
-                    for &tutorial_ui_id in tutorial.ui_entities.iter() {
-                        commands.entity(tutorial_ui_id).despawn_recursive();
-                    }
+                    // Check that current collider is a player collider
+                    if player_query.get(*collider_b).is_ok() {
+                        for &tutorial_ui_id in tutorial.ui_entities.iter() {
+                            commands.entity(tutorial_ui_id).despawn_recursive();
+                        }
 
-                    // And despawn the entity itself
-                    commands.entity(tutorial_entity).despawn();
+                        // And despawn the entity itself
+                        commands.entity(tutorial_entity).despawn();
+                    }
+                    // Dispawn all UI related entities into this entity
                 } else if let Ok((tutorial_entity, _, tutorial)) = tutorials_query.get(*collider_b)
                 {
-                    // Dispawn all UI related entities into this entity
-                    for &tutorial_ui_id in tutorial.ui_entities.iter() {
-                        commands.entity(tutorial_ui_id).despawn_recursive();
-                    }
+                    // Check that current collider is a player collider
+                    if player_query.get(*collider_a).is_ok() {
+                        // Dispawn all UI related entities into this entity
+                        for &tutorial_ui_id in tutorial.ui_entities.iter() {
+                            commands.entity(tutorial_ui_id).despawn_recursive();
+                        }
 
-                    // And despawn the entity itself
-                    commands.entity(tutorial_entity).despawn();
+                        // And despawn the entity itself
+                        commands.entity(tutorial_entity).despawn();
+                    }
                 }
             }
         }

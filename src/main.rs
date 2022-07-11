@@ -25,7 +25,7 @@ use tutorial::TutorialPlugin;
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
 
-#[derive(Component, Inspectable)]
+#[derive(Component, Inspectable, PartialEq)]
 enum MovementDirection {
     Left,
     Right,

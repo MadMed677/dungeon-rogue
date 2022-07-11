@@ -4,7 +4,7 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, Sprites};
+use crate::{ApplicationState, MovementDirection, Sprites};
 
 pub struct EnemyPlugin;
 
@@ -50,8 +50,18 @@ impl From<EntityInstance> for EnemyType {
     }
 }
 
-fn enemy_patrol(mut patrol_query: Query<(&Transform, &mut Velocity, &mut Patrol)>) {
-    for (transform, mut velocity, mut patrol) in patrol_query.iter_mut() {
+fn enemy_patrol(
+    mut patrol_query: Query<
+        (
+            &Transform,
+            &mut Velocity,
+            &mut Patrol,
+            &mut MovementDirection,
+        ),
+        With<Enemy>,
+    >,
+) {
+    for (transform, mut velocity, mut patrol, mut direction) in patrol_query.iter_mut() {
         // Do nothing if we have no patrol or it's equal to 1
         if patrol.points.len() <= 1 {
             continue;
@@ -66,15 +76,15 @@ fn enemy_patrol(mut patrol_query: Query<(&Transform, &mut Velocity, &mut Patrol)
 
         if new_velocity.dot(velocity.linvel) < 0.0 {
             if patrol.index == 0 {
-                patrol.forward = true;
+                *direction = MovementDirection::Right;
             } else if patrol.index == patrol.points.len() - 1 {
-                patrol.forward = false;
+                *direction = MovementDirection::Left;
             }
 
             // transform.translation.x = patrol.points[patrol.index].x;
             // transform.translation.y = patrol.points[patrol.index].y;
 
-            if patrol.forward {
+            if *direction == MovementDirection::Right {
                 patrol.index += 1;
             } else {
                 patrol.index -= 1;
@@ -109,7 +119,6 @@ fn ldtk_pixel_coords_to_translation_pivoted(
 pub struct Patrol {
     pub points: Vec<Vec2>,
     pub index: usize,
-    pub forward: bool,
 }
 
 impl LdtkEntity for Patrol {
@@ -151,11 +160,7 @@ impl LdtkEntity for Patrol {
             }
         }
 
-        Self {
-            points,
-            index: 1,
-            forward: true,
-        }
+        Self { points, index: 1 }
     }
 }
 
@@ -208,6 +213,7 @@ fn spawn_enemy(
             .insert(LockedAxes::ROTATION_LOCKED)
             .insert(Velocity::zero())
             .insert(Friction::new(3.0))
+            .insert(MovementDirection::Right)
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: enemy_material.texture.clone(),
                 // transform: *transform,
