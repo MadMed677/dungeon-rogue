@@ -7,7 +7,8 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, Climbable, Climber, MovementAnimation, MovementDirection, Speed, Sprites,
+    ApplicationState, Climbable, Climber, MovementAnimation, MovementDirection, OnMove, Speed,
+    Sprites,
 };
 
 #[derive(Debug, Inspectable)]
@@ -21,10 +22,6 @@ struct PlayerName(PlayerNames);
 
 #[derive(Component, Default, Inspectable)]
 pub struct Player;
-
-#[derive(Component, Default, Inspectable)]
-/// Describes that entity on move or not
-struct OnMove(bool);
 
 #[derive(Component, Debug, Inspectable)]
 struct GroundDetection {

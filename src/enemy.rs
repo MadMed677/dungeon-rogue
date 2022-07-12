@@ -4,7 +4,7 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, MovementAnimation, MovementDirection, Speed, Sprites};
+use crate::{ApplicationState, MovementAnimation, MovementDirection, OnMove, Speed, Sprites};
 
 pub struct EnemyPlugin;
 
@@ -55,6 +55,7 @@ fn enemy_movement(
         (
             &Transform,
             &Speed,
+            &mut OnMove,
             &mut Velocity,
             &mut Patrol,
             &mut MovementDirection,
@@ -63,13 +64,15 @@ fn enemy_movement(
         With<Enemy>,
     >,
 ) {
-    for (transform, speed, mut velocity, mut patrol, mut direction, mut sprite) in
+    for (transform, speed, mut on_move, mut velocity, mut patrol, mut direction, mut sprite) in
         patrol_query.iter_mut()
     {
         // Do nothing if we have no patrol or it's equal to 1
         if patrol.points.len() <= 1 {
             continue;
         }
+
+        on_move.0 = true;
 
         let mut new_velocity_3d = Vec3::from((
             (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * speed.0,
@@ -120,11 +123,17 @@ fn enemy_movement_animation(
             &mut TextureAtlasSprite,
             &Handle<TextureAtlas>,
             &mut MovementAnimation,
+            &OnMove,
         ),
         With<Enemy>,
     >,
 ) {
-    for (mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
+    for (mut sprite, texture_atlas_handle, mut movement_animation, on_move) in query.iter_mut() {
+        // Do not animate if the player is not on move
+        if on_move.0 == false {
+            continue;
+        }
+
         movement_animation.timer.tick(time.delta());
 
         if movement_animation.timer.finished() {
@@ -265,6 +274,8 @@ fn spawn_enemy(
                 timer: Timer::from_seconds(0.12, true),
             })
             .insert(Speed(80.0))
+            // By default enemy are not on move
+            .insert(OnMove(false))
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: enemy_material.texture.clone(),
                 // transform: *transform,

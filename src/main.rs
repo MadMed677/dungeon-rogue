@@ -30,6 +30,10 @@ pub struct MovementAnimation {
     timer: Timer,
 }
 
+#[derive(Component, Default, Inspectable)]
+/// Describes that entity on move or not
+pub struct OnMove(bool);
+
 #[derive(Component, Inspectable, PartialEq)]
 enum MovementDirection {
     Left,
