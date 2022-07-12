@@ -4,7 +4,7 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, MovementDirection, Sprites};
+use crate::{ApplicationState, MovementAnimation, MovementDirection, Speed, Sprites};
 
 pub struct EnemyPlugin;
 
@@ -50,10 +50,11 @@ impl From<EntityInstance> for EnemyType {
     }
 }
 
-fn enemy_patrol(
+fn enemy_movement(
     mut patrol_query: Query<
         (
             &Transform,
+            &Speed,
             &mut Velocity,
             &mut Patrol,
             &mut MovementDirection,
@@ -62,7 +63,8 @@ fn enemy_patrol(
         With<Enemy>,
     >,
 ) {
-    for (transform, mut velocity, mut patrol, mut direction, mut sprite) in patrol_query.iter_mut()
+    for (transform, speed, mut velocity, mut patrol, mut direction, mut sprite) in
+        patrol_query.iter_mut()
     {
         // Do nothing if we have no patrol or it's equal to 1
         if patrol.points.len() <= 1 {
@@ -70,7 +72,7 @@ fn enemy_patrol(
         }
 
         let mut new_velocity_3d = Vec3::from((
-            (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * 75.0,
+            (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * speed.0,
             0.0,
         ));
 
@@ -98,7 +100,8 @@ fn enemy_patrol(
             }
 
             new_velocity_3d = Vec3::from((
-                (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * 75.,
+                (patrol.points[patrol.index] - transform.translation.truncate()).normalize()
+                    * speed.0,
                 0.,
             ));
 
@@ -106,6 +109,33 @@ fn enemy_patrol(
         }
 
         velocity.linvel = new_velocity;
+    }
+}
+
+fn enemy_movement_animation(
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    time: Res<Time>,
+    mut query: Query<
+        (
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+            &mut MovementAnimation,
+        ),
+        With<Enemy>,
+    >,
+) {
+    for (mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
+        movement_animation.timer.tick(time.delta());
+
+        if movement_animation.timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            sprite.index += 1;
+
+            if sprite.index == texture_atlas.textures.len() {
+                // Loop the animation
+                sprite.index = 0;
+            }
+        }
     }
 }
 
@@ -199,7 +229,8 @@ impl Plugin for EnemyPlugin {
             ConditionSet::new()
                 .run_in_state(ApplicationState::Game)
                 .with_system(spawn_enemy)
-                .with_system(enemy_patrol)
+                .with_system(enemy_movement)
+                .with_system(enemy_movement_animation)
                 .into(),
         )
         // Use the same name as it's covered in "LdtkMap"
@@ -230,6 +261,10 @@ fn spawn_enemy(
             .insert(Friction::new(3.0))
             // Set a default movement direction in on right. We will change it later in the system
             .insert(MovementDirection::Right)
+            .insert(MovementAnimation {
+                timer: Timer::from_seconds(0.12, true),
+            })
+            .insert(Speed(80.0))
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: enemy_material.texture.clone(),
                 // transform: *transform,

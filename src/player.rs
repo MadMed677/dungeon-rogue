@@ -6,7 +6,9 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, Climbable, Climber, MovementDirection, Speed, Sprites};
+use crate::{
+    ApplicationState, Climbable, Climber, MovementAnimation, MovementDirection, Speed, Sprites,
+};
 
 #[derive(Debug, Inspectable)]
 enum PlayerNames {
@@ -19,11 +21,6 @@ struct PlayerName(PlayerNames);
 
 #[derive(Component, Default, Inspectable)]
 pub struct Player;
-
-#[derive(Component)]
-struct MovementAnimation {
-    timer: Timer,
-}
 
 #[derive(Component, Default, Inspectable)]
 /// Describes that entity on move or not
