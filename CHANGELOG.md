@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6] - 2022-07-12
+
+### Added
+- Add enemy sprites and make them look like a monsters
+- Add `patrol` for the monster to be able to walk on the map
+- Add enemy animation if they are on move (the same logic as we did for player)
+
+### Changed
+- Do not affect tutorials if there is any interactions except the Player. Because previously any kind of entity may 
+  affect tutorials and even the monsters removes tutorials after collision interactions.
+- Change enemy sprite rotation when the monster goes on left or right
+
 ## [0.1.5] - 2022-06-21
 
 ### Added
