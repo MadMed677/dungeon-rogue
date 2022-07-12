@@ -1,6 +1,7 @@
 # Changelog
 
 ## [0.1.6] - 2022-07-12
+![0.1.6](./docs/dungeon_rogue_0_1_6.gif)
 
 ### Added
 - Add enemy sprites and make them look like a monsters
