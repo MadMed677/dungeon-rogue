@@ -72,14 +72,11 @@ fn enemy_movement(
             continue;
         }
 
+        // Say that current enemy on move
         on_move.0 = true;
 
-        let mut new_velocity_3d = Vec3::from((
-            (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * speed.0,
-            0.0,
-        ));
-
-        let mut new_velocity = Vec2::new(new_velocity_3d.x, new_velocity_3d.y);
+        let mut new_velocity =
+            (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * speed.0;
 
         if new_velocity.x > 0.0 {
             *direction = MovementDirection::Right;
@@ -102,13 +99,9 @@ fn enemy_movement(
                 patrol.index -= 1;
             }
 
-            new_velocity_3d = Vec3::from((
-                (patrol.points[patrol.index] - transform.translation.truncate()).normalize()
-                    * speed.0,
-                0.,
-            ));
-
-            new_velocity = Vec2::new(new_velocity_3d.x, new_velocity_3d.y);
+            new_velocity = (patrol.points[patrol.index] - transform.translation.truncate())
+                .normalize()
+                * speed.0;
         }
 
         velocity.linvel = new_velocity;
@@ -261,6 +254,13 @@ fn spawn_enemy(
         let sprite_width = enemy_material.width;
         let sprite_height = enemy_material.height;
 
+        // Setup a default scale for an entity. It cannot be less then 1.0 for `x` and `y` axis
+        let scale = if transform.scale.x < 1.0 || transform.scale.y < 1.0 {
+            Vec3::new(1.0, 1.0, 1.0)
+        } else {
+            transform.scale
+        };
+
         commands
             .entity(enemy)
             .insert(RigidBody::Dynamic)
@@ -282,7 +282,7 @@ fn spawn_enemy(
                 transform: Transform {
                     translation: transform.translation,
                     rotation: transform.rotation,
-                    scale: Vec3::new(1.0, 1.0, 1.0),
+                    scale,
                 },
                 ..Default::default()
             });
