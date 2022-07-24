@@ -1,3 +1,4 @@
+mod audio;
 mod debug;
 mod enemy;
 mod ldtk;
@@ -12,6 +13,7 @@ use std::collections::HashSet;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
+use audio::GameAudioPlugin;
 use bevy_inspector_egui::Inspectable;
 use debug::DebugPlugin;
 use enemy::EnemyPlugin;
@@ -209,6 +211,7 @@ fn main() {
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)
         .add_plugin(MainMenuUIPlugin)
+        .add_plugin(GameAudioPlugin)
         .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(MapPlugin)

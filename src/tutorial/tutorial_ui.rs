@@ -139,7 +139,6 @@ impl Plugin for TutorialUiPlugin {
             ConditionSet::new()
                 .run_in_state(ApplicationState::Game)
                 .with_system(setup)
-                // .with_system(change_tutorial_visibility)
                 .into(),
         )
         // .add_enter_system(ApplicationState::Game, setup)
