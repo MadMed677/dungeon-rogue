@@ -1,6 +1,7 @@
 mod audio;
 mod debug;
 mod enemy;
+mod hud;
 mod ldtk;
 mod main_menu_ui;
 mod map;
@@ -17,6 +18,7 @@ use audio::GameAudioPlugin;
 use bevy_inspector_egui::Inspectable;
 use debug::DebugPlugin;
 use enemy::EnemyPlugin;
+use hud::HudPlugin;
 use ldtk::GameLdtkPlugin;
 use main_menu_ui::MainMenuUIPlugin;
 use map::MapPlugin;
@@ -59,6 +61,15 @@ pub struct Climber {
 
     // Describes that climber is in climbing process
     climbing: bool,
+}
+
+#[derive(Component, Clone, Debug, Default, PartialEq)]
+pub struct Health {
+    /// Describes current health
+    pub current: i32,
+
+    /// Describes maximum health
+    pub max: i32,
 }
 
 /// Describes the sprite assets information
@@ -214,6 +225,7 @@ fn main() {
         .add_plugin(GameAudioPlugin)
         .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)
+        .add_plugin(HudPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)

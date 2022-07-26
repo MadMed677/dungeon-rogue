@@ -30,17 +30,10 @@ struct AudioState {
 
 impl Plugin for GameAudioPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(ApplicationState::Game)
-                // .with_system(start_bgm_music)
-                .into(),
-        )
-        .add_enter_system(ApplicationState::Game, start_bg_music)
-        .add_exit_system(ApplicationState::Game, stop_bg_music);
-        app.add_plugin(AudioPlugin)
+        app.add_enter_system(ApplicationState::Game, start_bg_music)
+            .add_exit_system(ApplicationState::Game, stop_bg_music)
+            .add_plugin(AudioPlugin)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_audio)
-            // .add_startup_system(start_bgm_music)
             .add_audio_channel::<Background>();
     }
 }

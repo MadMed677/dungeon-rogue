@@ -7,8 +7,8 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, Climbable, Climber, MovementAnimation, MovementDirection, OnMove, Speed,
-    Sprites,
+    ApplicationState, Climbable, Climber, Health, MovementAnimation, MovementDirection, OnMove,
+    Speed, Sprites,
 };
 
 #[derive(Debug, Inspectable)]
@@ -125,6 +125,10 @@ fn spawn_player(
                 climbing: false,
             })
             .insert(GroundDetection { on_ground: false })
+            .insert(Health {
+                current: 10,
+                max: 10,
+            })
             .insert(Speed(120.0));
     }
 }
