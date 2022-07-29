@@ -8,7 +8,7 @@ use iyes_loopless::prelude::*;
 
 use crate::{
     ApplicationState, Climbable, Climber, Health, MovementAnimation, MovementDirection, OnMove,
-    Speed, Sprites,
+    PlayerIsDeadEvent, Speed, Sprites,
 };
 
 #[derive(Debug, Inspectable)]
@@ -64,6 +64,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(change_player_texture)
                 .with_system(spawn_ground_sensor)
                 .with_system(ground_detection)
+                .with_system(dead)
                 .into(),
         )
         .register_ldtk_entity::<PlayerBundle>("Player");
@@ -417,6 +418,19 @@ fn change_player_texture(
             //  is less than another sprite and we may
             //  have a collision mismatch with the ground
             transform.translation.y += 8.0;
+        }
+    }
+}
+
+fn dead(
+    player_query: Query<&Health, (With<Player>, Changed<Health>)>,
+    mut kill_the_player_event: EventWriter<PlayerIsDeadEvent>,
+) {
+    if let Ok(health) = player_query.get_single() {
+        // If we reach player health lower or equal to 0 we have to change
+        //  state to Death
+        if health.current <= 0 {
+            kill_the_player_event.send(PlayerIsDeadEvent);
         }
     }
 }

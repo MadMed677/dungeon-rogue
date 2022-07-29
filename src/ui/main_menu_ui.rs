@@ -3,9 +3,9 @@ use iyes_loopless::prelude::*;
 
 use crate::{ApplicationState, ApplicationStateMenu, ExitTheGameEvent, ResumeTheGameEvent};
 
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+use super::components::{
+    build_classic_button, build_classic_text, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
+};
 
 pub struct MainMenuUIPlugin;
 
@@ -21,35 +21,6 @@ enum MenuButtonType {
 
 #[derive(Component)]
 struct MenuButton(MenuButtonType);
-
-fn build_classic_button() -> ButtonBundle {
-    ButtonBundle {
-        style: Style {
-            size: Size::new(Val::Px(150.0), Val::Px(50.0)),
-            margin: Rect::all(Val::Auto),
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..Default::default()
-        },
-        color: UiColor(NORMAL_BUTTON),
-        ..Default::default()
-    }
-}
-
-fn build_classic_text(value: &str, asset_server: &Res<AssetServer>) -> TextBundle {
-    TextBundle {
-        text: Text::with_section(
-            value,
-            TextStyle {
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                font_size: 20.0,
-                color: Color::WHITE,
-            },
-            Default::default(),
-        ),
-        ..Default::default()
-    }
-}
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
@@ -92,7 +63,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..Default::default()
                         })
                         .with_children(|parent| {
-                            parent.spawn_bundle(build_classic_text("Dungeon Rogue", &asset_server));
+                            parent.spawn_bundle(build_classic_text(
+                                "Dungeon Rogue",
+                                &asset_server,
+                                None,
+                            ));
                         });
                 })
                 .with_children(|parent| {
@@ -105,7 +80,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 ..Default::default()
                             },
                             color: Color::NONE.into(),
-                            // color: Color::rgba(0.2, 0.2, 0.2, 0.3).into(),
                             ..Default::default()
                         })
                         .with_children(|parent| {
@@ -113,7 +87,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 .spawn_bundle(build_classic_button())
                                 .insert(MenuButton(MenuButtonType::Play))
                                 .with_children(|parent| {
-                                    parent.spawn_bundle(build_classic_text("Play", &asset_server));
+                                    parent.spawn_bundle(build_classic_text(
+                                        "Play",
+                                        &asset_server,
+                                        None,
+                                    ));
                                 });
                         })
                         .with_children(|parent| {
@@ -121,7 +99,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 .spawn_bundle(build_classic_button())
                                 .insert(MenuButton(MenuButtonType::Save))
                                 .with_children(|parent| {
-                                    parent.spawn_bundle(build_classic_text("Save", &asset_server));
+                                    parent.spawn_bundle(build_classic_text(
+                                        "Save",
+                                        &asset_server,
+                                        None,
+                                    ));
                                 });
                         })
                         .with_children(|parent| {
@@ -129,7 +111,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 .spawn_bundle(build_classic_button())
                                 .insert(MenuButton(MenuButtonType::Load))
                                 .with_children(|parent| {
-                                    parent.spawn_bundle(build_classic_text("Load", &asset_server));
+                                    parent.spawn_bundle(build_classic_text(
+                                        "Load",
+                                        &asset_server,
+                                        None,
+                                    ));
                                 });
                         })
                         .with_children(|parent| {
@@ -137,7 +123,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 .spawn_bundle(build_classic_button())
                                 .insert(MenuButton(MenuButtonType::Exit))
                                 .with_children(|parent| {
-                                    parent.spawn_bundle(build_classic_text("Exit", &asset_server));
+                                    parent.spawn_bundle(build_classic_text(
+                                        "Exit",
+                                        &asset_server,
+                                        None,
+                                    ));
                                 });
                         });
                 });

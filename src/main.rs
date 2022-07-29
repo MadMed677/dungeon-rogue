@@ -4,11 +4,11 @@ mod debug;
 mod enemy;
 mod hud;
 mod ldtk;
-mod main_menu_ui;
 mod map;
 mod physics;
 mod player;
 mod tutorial;
+mod ui;
 
 use std::collections::HashSet;
 
@@ -22,11 +22,12 @@ use debug::DebugPlugin;
 use enemy::EnemyPlugin;
 use hud::HudPlugin;
 use ldtk::GameLdtkPlugin;
-use main_menu_ui::MainMenuUIPlugin;
 use map::MapPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use tutorial::TutorialPlugin;
+use ui::dead_menu_ui::DeadMenuUIPlugin;
+use ui::main_menu_ui::MainMenuUIPlugin;
 
 #[derive(Component, Inspectable)]
 pub struct Speed(f32);
@@ -133,6 +134,8 @@ pub struct ResumeTheGameEvent;
 
 pub struct ExitTheGameEvent;
 
+pub struct PlayerIsDeadEvent;
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -230,10 +233,12 @@ fn main() {
         .add_event::<PauseTheGameEvent>()
         .add_event::<ResumeTheGameEvent>()
         .add_event::<ExitTheGameEvent>()
+        .add_event::<PlayerIsDeadEvent>()
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)
         .add_plugin(MainMenuUIPlugin)
+        .add_plugin(DeadMenuUIPlugin)
         .add_plugin(GameAudioPlugin)
         .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)

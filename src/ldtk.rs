@@ -4,7 +4,8 @@ use bevy_rapier2d::plugin::RapierConfiguration;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, ApplicationStateMenu, ExitTheGameEvent, PauseTheGameEvent, ResumeTheGameEvent,
+    ApplicationState, ApplicationStateMenu, ExitTheGameEvent, PauseTheGameEvent, PlayerIsDeadEvent,
+    ResumeTheGameEvent,
 };
 
 pub struct GameLdtkPlugin;
@@ -55,10 +56,12 @@ fn keyboard_state_changer(
 fn change_game_state(
     mut commands: Commands,
     mut pause_game_event: EventReader<PauseTheGameEvent>,
+    mut player_is_dead: EventReader<PlayerIsDeadEvent>,
     mut resume_game_event: EventReader<ResumeTheGameEvent>,
     mut exit_game_event: EventReader<ExitTheGameEvent>,
     mut rapier_config: ResMut<RapierConfiguration>,
     mut exit: EventWriter<AppExit>,
+    current_state: Res<CurrentState<ApplicationState>>,
 ) {
     for _ in pause_game_event.iter() {
         commands.insert_resource(NextState(ApplicationState::Menu(
@@ -69,7 +72,21 @@ fn change_game_state(
         rapier_config.physics_pipeline_active = false;
     }
 
+    for _ in player_is_dead.iter() {
+        commands.insert_resource(NextState(ApplicationState::Menu(
+            ApplicationStateMenu::Dead,
+        )));
+
+        // Turn off the physics when we pause the game
+        rapier_config.physics_pipeline_active = false;
+    }
+
     for _ in resume_game_event.iter() {
+        // Forbid to resume the game if the player in a `Dead` menu
+        if current_state.0 == ApplicationState::Menu(ApplicationStateMenu::Dead) {
+            return;
+        }
+
         commands.insert_resource(NextState(ApplicationState::Game));
 
         // Turn on the physics when we resume the game

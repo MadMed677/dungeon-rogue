@@ -32,7 +32,6 @@ fn combat_by_keyboard(
 }
 
 fn combat_interaction_detection(
-    mut commands: Commands,
     mut collisions: EventReader<CollisionEvent>,
     mut player_query: Query<&mut Health, With<Player>>,
     enemy_query: Query<With<Enemy>>,
