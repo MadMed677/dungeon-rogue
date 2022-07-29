@@ -4,7 +4,9 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, MovementAnimation, MovementDirection, OnMove, Speed, Sprites};
+use crate::{
+    ApplicationState, Health, MovementAnimation, MovementDirection, OnMove, Speed, Sprites,
+};
 
 pub struct EnemyPlugin;
 
@@ -276,6 +278,7 @@ fn spawn_enemy(
             .insert(Speed(80.0))
             // By default enemy are not on move
             .insert(OnMove(false))
+            .insert(Health { current: 2, max: 2 })
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: enemy_material.texture.clone(),
                 // transform: *transform,

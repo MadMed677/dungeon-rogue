@@ -1,4 +1,5 @@
 mod audio;
+mod combat;
 mod debug;
 mod enemy;
 mod hud;
@@ -16,6 +17,7 @@ use iyes_loopless::prelude::*;
 
 use audio::GameAudioPlugin;
 use bevy_inspector_egui::Inspectable;
+use combat::CombatPlugin;
 use debug::DebugPlugin;
 use enemy::EnemyPlugin;
 use hud::HudPlugin;
@@ -63,7 +65,7 @@ pub struct Climber {
     climbing: bool,
 }
 
-#[derive(Component, Clone, Debug, Default, PartialEq)]
+#[derive(Component, Clone, Debug, Default, PartialEq, Inspectable)]
 pub struct Health {
     /// Describes current health
     pub current: i32,
@@ -229,6 +231,7 @@ fn main() {
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)
+        .add_plugin(CombatPlugin)
         .add_plugin(DebugPlugin)
         .run();
 }

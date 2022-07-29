@@ -8,7 +8,7 @@ use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 use crate::enemy::{Enemy, EnemyType, Patrol};
 use crate::player::Player;
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
-use crate::{Climbable, MovementDirection, OnMove, Speed};
+use crate::{Climbable, Health, MovementDirection, OnMove, Speed};
 
 pub struct DebugPlugin;
 
@@ -35,6 +35,7 @@ impl Plugin for DebugPlugin {
                 .register_inspectable::<OnMove>()
                 .register_inspectable::<EnemyType>()
                 .register_inspectable::<Patrol>()
+                .register_inspectable::<Health>()
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())
                 .add_system_to_stage(DEBUG, debug_collisions)
                 .add_system_to_stage(DEBUG, update_debug_collisions)
