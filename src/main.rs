@@ -115,7 +115,17 @@ enum ApplicationState {
     Game,
 
     /// Describes that currently a player in the menu
-    Menu,
+    Menu(ApplicationStateMenu),
+}
+
+/// Describes all states for a menu
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+enum ApplicationStateMenu {
+    /// Describes that currently a player in the main menu
+    Main,
+
+    /// Describes that currently a player in a dead menu (when the player is dead)
+    Dead,
 }
 
 pub struct PauseTheGameEvent;
@@ -216,7 +226,7 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
-        .add_loopless_state(ApplicationState::Menu)
+        .add_loopless_state(ApplicationState::Menu(ApplicationStateMenu::Main))
         .add_event::<PauseTheGameEvent>()
         .add_event::<ResumeTheGameEvent>()
         .add_event::<ExitTheGameEvent>()

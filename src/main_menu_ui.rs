@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, ExitTheGameEvent, ResumeTheGameEvent};
+use crate::{ApplicationState, ApplicationStateMenu, ExitTheGameEvent, ResumeTheGameEvent};
 
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
@@ -189,11 +189,11 @@ impl Plugin for MainMenuUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             ConditionSet::new()
-                .run_in_state(ApplicationState::Menu)
+                .run_in_state(ApplicationState::Menu(ApplicationStateMenu::Main))
                 .with_system(button_interaction)
                 .into(),
         )
-        .add_enter_system(ApplicationState::Menu, setup)
-        .add_exit_system(ApplicationState::Menu, destroy);
+        .add_enter_system(ApplicationState::Menu(ApplicationStateMenu::Main), setup)
+        .add_exit_system(ApplicationState::Menu(ApplicationStateMenu::Main), destroy);
     }
 }

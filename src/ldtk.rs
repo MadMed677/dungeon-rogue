@@ -3,7 +3,9 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::plugin::RapierConfiguration;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, ExitTheGameEvent, PauseTheGameEvent, ResumeTheGameEvent};
+use crate::{
+    ApplicationState, ApplicationStateMenu, ExitTheGameEvent, PauseTheGameEvent, ResumeTheGameEvent,
+};
 
 pub struct GameLdtkPlugin;
 
@@ -43,7 +45,7 @@ fn keyboard_state_changer(
             ApplicationState::Game => {
                 pause_game_event.send(PauseTheGameEvent);
             }
-            ApplicationState::Menu => {
+            ApplicationState::Menu(_) => {
                 resume_game_event.send(ResumeTheGameEvent);
             }
         }
@@ -59,7 +61,9 @@ fn change_game_state(
     mut exit: EventWriter<AppExit>,
 ) {
     for _ in pause_game_event.iter() {
-        commands.insert_resource(NextState(ApplicationState::Menu));
+        commands.insert_resource(NextState(ApplicationState::Menu(
+            ApplicationStateMenu::Main,
+        )));
 
         // Turn off the physics when we pause the game
         rapier_config.physics_pipeline_active = false;
