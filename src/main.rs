@@ -5,6 +5,7 @@ mod enemy;
 mod hud;
 mod ldtk;
 mod map;
+mod out_of_bounce;
 mod physics;
 mod player;
 mod tutorial;
@@ -23,6 +24,7 @@ use enemy::EnemyPlugin;
 use hud::HudPlugin;
 use ldtk::GameLdtkPlugin;
 use map::MapPlugin;
+use out_of_bounce::OutOfBouncePlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use tutorial::TutorialPlugin;
@@ -245,6 +247,7 @@ fn main() {
         .add_plugin(HudPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
+        .add_plugin(OutOfBouncePlugin)
         .add_plugin(EnemyPlugin)
         .add_plugin(CombatPlugin)
         .add_plugin(DebugPlugin)

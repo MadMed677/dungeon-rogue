@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, ApplicationStateMenu};
+use crate::{ApplicationState, ApplicationStateMenu, ExitTheGameEvent};
 
-use super::components::{build_classic_button, build_classic_text, ClassicButtonTextParams};
+use super::components::{
+    build_classic_button, build_classic_text, ClassicButtonTextParams, HOVERED_BUTTON,
+    NORMAL_BUTTON, PRESSED_BUTTON,
+};
 
 pub struct DeadMenuUIPlugin;
 
 enum DeadButtonType {
-    Play,
+    Replay,
     Exit,
 }
 
@@ -92,10 +95,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|parent| {
                             parent
                                 .spawn_bundle(build_classic_button())
-                                .insert(MenuButton(DeadButtonType::Play))
+                                .insert(MenuButton(DeadButtonType::Replay))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text(
-                                        "Play",
+                                        "Replay",
                                         &asset_server,
                                         None,
                                     ));
@@ -107,7 +110,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 .insert(MenuButton(DeadButtonType::Exit))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text(
-                                        "Save",
+                                        "Exit",
                                         &asset_server,
                                         None,
                                     ));
@@ -124,4 +127,35 @@ fn destroy(mut commands: Commands, dead_menu_ui_query: Query<Entity, With<DeadMe
     commands.entity(dead_menu_entity).despawn_recursive();
 }
 
-fn button_interaction() {}
+fn button_interaction(
+    mut interaction_query: Query<
+        (&Interaction, &mut UiColor, Option<&MenuButton>),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut exit_game_event: EventWriter<ExitTheGameEvent>,
+) {
+    for (interaction, mut color, button) in interaction_query.iter_mut() {
+        match *interaction {
+            Interaction::Clicked => {
+                *color = UiColor(PRESSED_BUTTON);
+
+                if let Some(button) = button {
+                    match button.0 {
+                        DeadButtonType::Replay => {
+                            // We should start the game from the begining
+                        }
+                        DeadButtonType::Exit => {
+                            exit_game_event.send(ExitTheGameEvent);
+                        }
+                    }
+                }
+            }
+            Interaction::Hovered => {
+                *color = UiColor(HOVERED_BUTTON);
+            }
+            Interaction::None => {
+                *color = UiColor(NORMAL_BUTTON);
+            }
+        }
+    }
+}
