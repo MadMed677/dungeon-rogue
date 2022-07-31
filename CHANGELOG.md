@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.7] - 2022-07-24
+| Out-of bounce dead | Enemy damage |
+| ------------------ | ------------ |
+| ![0.1.7_1](./docs/dungeon_rogue_0_1_7_1.gif) | ![0.1.7_2](./docs/dungeon_rogue_0_1_7_2.gif) |
+
+### Added
+- Add background game music when the player is playing the game. And paused it when the player is in menu.
+- Add player health and add HuD (Heads-up Display)
+- Add `Health` for Player and all enemies (currently all enemies has the same amount of health but it will be 
+  changed in the future).
+- Update `Health` component when the player clicked `H` keyboard (just for testing). There is no relation to the 
+  game. Just to check how to update `Health` component and HuD width. 
+- Show dead menu when the player is dead. Forbid to resume the game if the player is dead
+- Add out-of bounce area when the player should die because it's a restricted area.
+
+### Changed
+- Add more complex game state. Add additional game state for `Game` and `Menu` states. Now `Menu` has `Main` 
+  and`Dead` sub states.
+
 ## [0.1.6] - 2022-07-12
 ![0.1.6](./docs/dungeon_rogue_0_1_6.gif)
 
