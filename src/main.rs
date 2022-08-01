@@ -8,6 +8,7 @@ mod map;
 mod out_of_bounce;
 mod physics;
 mod player;
+mod tests;
 mod tutorial;
 mod ui;
 
@@ -31,7 +32,7 @@ use tutorial::TutorialPlugin;
 use ui::dead_menu_ui::DeadMenuUIPlugin;
 use ui::main_menu_ui::MainMenuUIPlugin;
 
-#[derive(Component, Inspectable)]
+#[derive(Component, Inspectable, Debug)]
 pub struct Speed(f32);
 
 #[derive(Component)]
@@ -106,7 +107,7 @@ struct TutorialSprites {
     movement: Handle<Image>,
 }
 
-struct Sprites {
+pub struct Sprites {
     player: PlayerSprites,
     monsters: MonstersSprites,
     tutorial: TutorialSprites,

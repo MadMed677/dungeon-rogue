@@ -434,3 +434,26 @@ fn dead(
         }
     }
 }
+
+#[test]
+fn should_spawn_a_player_with_speed() {
+    use crate::tests::sprites_textures::prepare_sprites;
+
+    let mut app = App::new();
+
+    app.insert_resource(prepare_sprites())
+        .add_system(spawn_player)
+        .register_ldtk_entity::<PlayerBundle>("Player");
+
+    let player_id = app
+        .world
+        .spawn()
+        .insert(Player)
+        .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+        .id();
+
+    app.update();
+
+    assert!(app.world.get::<Player>(player_id).is_some());
+    assert!(app.world.get::<Speed>(player_id).is_some());
+}
