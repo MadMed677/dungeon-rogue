@@ -435,25 +435,102 @@ fn dead(
     }
 }
 
-#[test]
-fn should_spawn_a_player_with_speed() {
+#[cfg(test)]
+mod player_tests {
     use crate::tests::sprites_textures::prepare_sprites;
+    use crate::{
+        player::{spawn_player, Player, PlayerBundle},
+        Speed,
+    };
+    use bevy::prelude::*;
+    use bevy_ecs_ldtk::prelude::*;
+    use bevy_rapier2d::prelude::Velocity;
 
-    let mut app = App::new();
+    use super::player_movement;
 
-    app.insert_resource(prepare_sprites())
-        .add_system(spawn_player)
-        .register_ldtk_entity::<PlayerBundle>("Player");
+    #[test]
+    fn should_spawn_a_player_with_speed() {
+        let mut app = App::new();
 
-    let player_id = app
-        .world
-        .spawn()
-        .insert(Player)
-        .insert(Transform::from_xyz(0.0, 0.0, 1.0))
-        .id();
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .register_ldtk_entity::<PlayerBundle>("Player");
 
-    app.update();
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
 
-    assert!(app.world.get::<Player>(player_id).is_some());
-    assert!(app.world.get::<Speed>(player_id).is_some());
+        app.update();
+
+        assert!(app.world.get::<Player>(player_id).is_some());
+        assert!(app.world.get::<Speed>(player_id).is_some());
+    }
+
+    #[test]
+    fn should_spawn_a_player_with_zero_velocity() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.update();
+
+        let player_velocity = app.world.get::<Velocity>(player_id).cloned();
+
+        assert_eq!(player_velocity, Some(Velocity::zero()));
+    }
+
+    #[test]
+    fn should_increase_player_speed_by_keyboard() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(player_movement)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        let input = Input::<KeyCode>::default();
+        app.insert_resource(input);
+
+        // We should call first update to spawn an entity
+        // Because we don't know which system will run first
+        //  `spawn_player` or `player_movement` we should call first
+        // update and let it be
+        app.update();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Right);
+        app.insert_resource(input);
+
+        app.update();
+
+        let player_velocity = app.world.get::<Velocity>(player_id).cloned();
+        let player_speed = app
+            .world
+            .get::<Speed>(player_id)
+            .expect("Player must have a speed");
+
+        assert_eq!(
+            player_velocity,
+            Some(Velocity::linear(Vec2::new(player_speed.0, 0.0)))
+        );
+    }
 }
