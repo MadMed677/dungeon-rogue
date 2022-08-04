@@ -69,11 +69,11 @@ fn dead_interaction_detection(
         match collision {
             CollisionEvent::Started(collider_a, collider_b, _) => {
                 if let Ok(mut health) = player_query.get_mut(*collider_a) {
-                    if let Ok(_) = death_collision_query.get(*collider_b) {
+                    if death_collision_query.get(*collider_b).is_ok() {
                         health.current = 0;
                     }
                 } else if let Ok(mut health) = player_query.get_mut(*collider_b) {
-                    if let Ok(_) = death_collision_query.get(*collider_a) {
+                    if death_collision_query.get(*collider_a).is_ok() {
                         health.current = 0;
                     }
                 }

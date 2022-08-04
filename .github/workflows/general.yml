@@ -76,20 +76,20 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
 
-  coverage:
-    name: Code coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          components: clippy
-          toolchain: stable
-          override: true
-      - name: Install alsa and udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
-        if: runner.os == 'linux'
-      - name: Run Coverage
-        uses: actions-rs/tarpaulin@v0.1
-        with:
-          args: "--ignore-tests --avoid-cfg-tarpaulin"
+#  coverage:
+#    name: Code coverage
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#          components: clippy
+#          toolchain: stable
+#          override: true
+#      - name: Install alsa and udev
+#        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+#        if: runner.os == 'linux'
+#      - name: Run Coverage
+#        uses: actions-rs/tarpaulin@v0.1
+#        with:
+#          args: "--ignore-tests --avoid-cfg-tarpaulin"

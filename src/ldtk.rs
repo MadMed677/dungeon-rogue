@@ -53,6 +53,8 @@ fn keyboard_state_changer(
     }
 }
 
+// Allow too many arguments for specific function
+#[allow(clippy::too_many_arguments)]
 fn change_game_state(
     mut commands: Commands,
     mut pause_game_event: EventReader<PauseTheGameEvent>,

@@ -148,10 +148,11 @@ fn spawn_wall_collision(
     let mut level_to_wall_locations: HashMap<Entity, HashSet<GridCoords>> = HashMap::new();
     for (&grid_coords, &Parent(parent)) in wall_query.iter() {
         if let Ok(&Parent(level_entity)) = parent_query.get(parent) {
-            level_to_wall_locations
-                .entry(level_entity)
-                .or_insert(HashSet::new())
-                .insert(grid_coords);
+            std::collections::hash_map::Entry::or_insert(
+                level_to_wall_locations.entry(level_entity),
+                HashSet::new(),
+            )
+            .insert(grid_coords);
         }
     }
 

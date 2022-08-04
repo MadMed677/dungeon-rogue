@@ -1,3 +1,5 @@
+#![allow(clippy::forget_non_drop)]
+
 mod audio;
 mod combat;
 mod debug;
@@ -44,7 +46,7 @@ pub struct MovementAnimation {
 /// Describes that entity on move or not
 pub struct OnMove(bool);
 
-#[derive(Component, Inspectable, PartialEq)]
+#[derive(Component, Inspectable, PartialEq, Clone, Debug)]
 enum MovementDirection {
     Left,
     Right,
