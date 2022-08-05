@@ -139,6 +139,7 @@ pub struct ResumeTheGameEvent;
 
 pub struct ExitTheGameEvent;
 
+#[derive(Debug)]
 pub struct PlayerIsDeadEvent;
 
 fn setup(

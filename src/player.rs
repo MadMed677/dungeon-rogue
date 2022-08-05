@@ -436,16 +436,17 @@ fn dead(
 mod player_tests {
     use crate::player::{player_jump, GroundDetection};
     use crate::tests::sprites_textures::prepare_sprites;
-    use crate::MovementDirection;
     use crate::{
         player::{spawn_player, Player, PlayerBundle},
         Speed,
     };
+    use crate::{Health, MovementDirection, PlayerIsDeadEvent};
+    use bevy::ecs::event::Events;
     use bevy::prelude::*;
     use bevy_ecs_ldtk::prelude::*;
     use bevy_rapier2d::prelude::{ExternalImpulse, Velocity};
 
-    use super::player_movement;
+    use super::{dead, player_movement};
 
     #[test]
     fn should_spawn_a_player_with_speed() {
@@ -689,5 +690,42 @@ mod player_tests {
             .expect("Should have external impulse");
 
         assert_eq!(impulse.impulse, Vec2::new(0.0, 35.0));
+    }
+
+    #[test]
+    fn player_should_dead_when_the_health_is_gone() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(dead)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.add_event::<PlayerIsDeadEvent>();
+
+        app.update();
+
+        let mut player_health = app
+            .world
+            .get_mut::<Health>(player_id)
+            .expect("Player must have a health component");
+
+        // Set playear health to 0 to kill it
+        player_health.current = 0;
+
+        app.update();
+
+        let player_died_events = app.world.resource::<Events<PlayerIsDeadEvent>>();
+        let mut player_died_reader = player_died_events.get_reader();
+        let player_died = player_died_reader.iter(player_died_events).next();
+
+        assert!(player_died.is_some());
     }
 }
