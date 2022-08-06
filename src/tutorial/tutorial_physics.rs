@@ -86,7 +86,7 @@ fn spawn_tutorial(
     for (tutorial_entity, tutorial_transform) in tutorials_query.iter() {
         commands
             .entity(tutorial_entity)
-            .insert(Sensor(true))
+            .insert(Sensor)
             /*
                 We should place the same width and height as it described in LDtk
                 At least for now I have no idea how to take this data from the LDtk

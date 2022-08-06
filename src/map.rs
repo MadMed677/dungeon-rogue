@@ -31,30 +31,12 @@ pub struct ColliderBundle {
     pub sensor: Sensor,
 }
 
-impl Default for ColliderBundle {
-    fn default() -> Self {
-        Self {
-            collider: Collider::cuboid(2.0, 2.0),
-            sensor: Sensor(false),
-        }
-    }
-}
-
-impl From<EntityInstance> for ColliderBundle {
-    fn from(_: EntityInstance) -> Self {
-        Self {
-            collider: Collider::cuboid(2.0, 2.0),
-            sensor: Sensor(false),
-        }
-    }
-}
-
 impl From<IntGridCell> for ColliderBundle {
     fn from(int_grid_cell: IntGridCell) -> Self {
         if int_grid_cell.value == CollisionId::Ladder as i32 {
             Self {
                 collider: Collider::cuboid(8.0, 8.0),
-                sensor: Sensor(true),
+                sensor: Sensor,
             }
         } else {
             unimplemented!();
