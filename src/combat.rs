@@ -23,10 +23,8 @@ fn combat_by_keyboard(
     mut health_query: Query<&mut Health, With<Player>>,
 ) {
     for mut health in health_query.iter_mut() {
-        if keyboard.just_pressed(KeyCode::H) {
-            if health.current != 0 {
-                health.current -= 1;
-            }
+        if keyboard.just_pressed(KeyCode::H) && health.current != 0 {
+            health.current -= 1;
         }
     }
 }
@@ -40,16 +38,12 @@ fn combat_interaction_detection(
         match collision {
             CollisionEvent::Started(collider_a, collider_b, _) => {
                 if let Ok(mut player_health) = player_query.get_mut(*collider_a) {
-                    if let Ok(_) = enemy_query.get(*collider_b) {
-                        if player_health.current > 0 {
-                            player_health.current -= 1;
-                        }
+                    if enemy_query.get(*collider_b).is_ok() && player_health.current > 0 {
+                        player_health.current -= 1;
                     }
                 } else if let Ok(mut player_health) = player_query.get_mut(*collider_b) {
-                    if let Ok(_) = enemy_query.get(*collider_a) {
-                        if player_health.current > 0 {
-                            player_health.current -= 1;
-                        }
+                    if enemy_query.get(*collider_a).is_ok() && player_health.current > 0 {
+                        player_health.current -= 1;
                     }
                 }
             }

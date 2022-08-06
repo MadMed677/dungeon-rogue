@@ -1,3 +1,5 @@
+#![allow(clippy::forget_non_drop)]
+
 mod audio;
 mod combat;
 mod debug;
@@ -8,6 +10,7 @@ mod map;
 mod out_of_bounce;
 mod physics;
 mod player;
+mod tests;
 mod tutorial;
 mod ui;
 
@@ -31,7 +34,7 @@ use tutorial::TutorialPlugin;
 use ui::dead_menu_ui::DeadMenuUIPlugin;
 use ui::main_menu_ui::MainMenuUIPlugin;
 
-#[derive(Component, Inspectable)]
+#[derive(Component, Inspectable, Debug)]
 pub struct Speed(f32);
 
 #[derive(Component)]
@@ -43,7 +46,7 @@ pub struct MovementAnimation {
 /// Describes that entity on move or not
 pub struct OnMove(bool);
 
-#[derive(Component, Inspectable, PartialEq)]
+#[derive(Component, Inspectable, PartialEq, Clone, Debug)]
 enum MovementDirection {
     Left,
     Right,
@@ -106,7 +109,7 @@ struct TutorialSprites {
     movement: Handle<Image>,
 }
 
-struct Sprites {
+pub struct Sprites {
     player: PlayerSprites,
     monsters: MonstersSprites,
     tutorial: TutorialSprites,
@@ -136,6 +139,7 @@ pub struct ResumeTheGameEvent;
 
 pub struct ExitTheGameEvent;
 
+#[derive(Debug)]
 pub struct PlayerIsDeadEvent;
 
 fn setup(

@@ -38,9 +38,6 @@ struct GroundSensor {
 struct PlayerBundle {
     pub player: Player,
 
-    // #[sprite_sheet_bundle]
-    // #[bundle]
-    // pub sprite_bundle: SpriteSheetBundle,
     #[worldly]
     pub worldly: Worldly,
 
@@ -169,7 +166,7 @@ fn player_movement(
         velocity.linvel.x = move_delta_x;
 
         // Change `OnMove` component
-        if move_delta_x > 0.0 || move_delta_x < 0.0 {
+        if move_delta_x != 0.0 {
             on_move.0 = true;
         } else {
             on_move.0 = false;
@@ -236,7 +233,7 @@ fn player_movement_animation(
         // If the player is not on move
         //  set the first sprite which is equal to
         //  player default state and do nothing
-        if on_move.0 == false {
+        if !on_move.0 {
             sprite.index = 0;
 
             return;
@@ -298,10 +295,10 @@ fn ground_detection(
         for collision in collisions.iter() {
             match collision {
                 CollisionEvent::Started(ground, player, _) => {
-                    if let Ok(_) = rigid_bodies.get(*player) {
-                        if player == &ground_sensor.ground_detection_entity {
-                            ground_sensor.intersecting_ground_entities.insert(*ground);
-                        }
+                    if rigid_bodies.get(*player).is_ok()
+                        && player == &ground_sensor.ground_detection_entity
+                    {
+                        ground_sensor.intersecting_ground_entities.insert(*ground);
                     }
                 }
                 CollisionEvent::Stopped(ground, player, _) => {
@@ -315,7 +312,7 @@ fn ground_detection(
         if let Ok(mut ground_detection) =
             ground_detectors.get_mut(ground_sensor.ground_detection_entity)
         {
-            ground_detection.on_ground = ground_sensor.intersecting_ground_entities.len() > 0;
+            ground_detection.on_ground = !ground_sensor.intersecting_ground_entities.is_empty();
         }
     }
 }
@@ -432,5 +429,341 @@ fn dead(
         if health.current <= 0 {
             kill_the_player_event.send(PlayerIsDeadEvent);
         }
+    }
+}
+
+#[cfg(test)]
+mod player_tests {
+    use crate::player::{player_jump, GroundDetection};
+    use crate::tests::sprites_textures::prepare_sprites;
+    use crate::{
+        player::{spawn_player, Player, PlayerBundle},
+        Speed,
+    };
+    use crate::{Climber, Health, MovementDirection, PlayerIsDeadEvent};
+    use bevy::ecs::event::Events;
+    use bevy::prelude::*;
+    use bevy_ecs_ldtk::prelude::*;
+    use bevy_rapier2d::prelude::{ExternalImpulse, GravityScale, Velocity};
+
+    use super::{dead, ignore_gravity_during_climbing, player_movement};
+
+    #[test]
+    fn should_spawn_a_player_with_speed() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.update();
+
+        assert!(app.world.get::<Player>(player_id).is_some());
+        assert!(app.world.get::<Speed>(player_id).is_some());
+    }
+
+    #[test]
+    fn should_spawn_a_player_with_zero_velocity() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.update();
+
+        let player_velocity = app.world.get::<Velocity>(player_id).cloned();
+
+        assert_eq!(player_velocity, Some(Velocity::zero()));
+    }
+
+    #[test]
+    fn should_increase_player_speed_by_keyboard() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(player_movement)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        let input = Input::<KeyCode>::default();
+        app.insert_resource(input);
+
+        // We should call first update to spawn an entity
+        // Because we don't know which system will run first
+        //  `spawn_player` or `player_movement` we should call first
+        // update and let it be
+        app.update();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Right);
+        app.insert_resource(input);
+
+        app.update();
+
+        let player_velocity = app.world.get::<Velocity>(player_id).cloned();
+        let player_speed = app
+            .world
+            .get::<Speed>(player_id)
+            .expect("Player must have a speed");
+
+        assert_eq!(
+            player_velocity,
+            Some(Velocity::linear(Vec2::new(player_speed.0, 0.0)))
+        );
+    }
+
+    #[test]
+    fn should_change_movement_direction_on_move() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(player_movement)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        let input = Input::<KeyCode>::default();
+        app.insert_resource(input);
+
+        // We should call first update to spawn an entity
+        // Because we don't know which system will run first
+        //  `spawn_player` or `player_movement` we should call first
+        // update and let it be
+        app.update();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Right);
+        app.insert_resource(input);
+
+        app.update();
+
+        assert_eq!(
+            app.world.get::<MovementDirection>(player_id).cloned(),
+            Some(MovementDirection::Right)
+        );
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Left);
+        app.insert_resource(input);
+
+        app.update();
+
+        assert_eq!(
+            app.world.get::<MovementDirection>(player_id).cloned(),
+            Some(MovementDirection::Left)
+        );
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Down);
+        app.insert_resource(input);
+
+        app.update();
+
+        // Player should keep the same direction (Left or Right)
+        //  even if we press `Down` or any other key code
+        //  except left or right
+        assert_eq!(
+            app.world.get::<MovementDirection>(player_id).cloned(),
+            Some(MovementDirection::Left)
+        );
+    }
+
+    #[test]
+    fn player_should_not_jump_without_ground_detection() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(player_jump)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        let input = Input::<KeyCode>::default();
+        app.insert_resource(input);
+
+        // We should call first update to spawn an entity
+        // Because we don't know which system will run first
+        //  `spawn_player` or `player_movement` we should call first
+        // update and let it be
+        app.update();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Space);
+        app.insert_resource(input);
+
+        let mut ground_detection = app
+            .world
+            .get_mut::<GroundDetection>(player_id)
+            .expect("Should have external impulse");
+
+        // Change ground detection to `false` to NOT be able to jump
+        //  without ground detection player can't jump
+        ground_detection.on_ground = false;
+
+        app.update();
+
+        let impulse = app
+            .world
+            .get::<ExternalImpulse>(player_id)
+            .expect("Should have external impulse");
+
+        // We shouldn't have an impulse - this means that player don't jump
+        assert_eq!(impulse.impulse, Vec2::new(0.0, 0.0));
+    }
+
+    #[test]
+    fn player_should_jump_by_space() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(player_jump)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        let input = Input::<KeyCode>::default();
+        app.insert_resource(input);
+
+        // We should call first update to spawn an entity
+        // Because we don't know which system will run first
+        //  `spawn_player` or `player_movement` we should call first
+        // update and let it be
+        app.update();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Space);
+        app.insert_resource(input);
+
+        let mut ground_detection = app
+            .world
+            .get_mut::<GroundDetection>(player_id)
+            .expect("Should have external impulse");
+
+        // Change ground detection to `true` to be able to jump
+        //  without ground detection player can't jump
+        ground_detection.on_ground = true;
+
+        app.update();
+
+        let impulse = app
+            .world
+            .get::<ExternalImpulse>(player_id)
+            .expect("Should have external impulse");
+
+        assert_eq!(impulse.impulse, Vec2::new(0.0, 35.0));
+    }
+
+    #[test]
+    fn player_should_dead_when_the_health_is_gone() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(dead)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.add_event::<PlayerIsDeadEvent>();
+
+        app.update();
+
+        let mut player_health = app
+            .world
+            .get_mut::<Health>(player_id)
+            .expect("Player must have a health component");
+
+        // Set playear health to 0 to kill it
+        player_health.current = 0;
+
+        app.update();
+
+        let player_died_events = app.world.resource::<Events<PlayerIsDeadEvent>>();
+        let mut player_died_reader = player_died_events.get_reader();
+        let player_died = player_died_reader.iter(player_died_events).next();
+
+        assert!(player_died.is_some());
+    }
+
+    #[test]
+    fn should_disable_gravity_during_climbing() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(ignore_gravity_during_climbing)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.update();
+
+        let mut player_climber = app
+            .world
+            .get_mut::<Climber>(player_id)
+            .expect("Player must have a climber component");
+
+        // Add climbing as `true` to disable the gravity
+        player_climber.climbing = true;
+
+        app.update();
+
+        let player_gravity = app
+            .world
+            .get::<GravityScale>(player_id)
+            .expect("Player must have a gravity component");
+
+        // Gravity should be 0.0 when player is climbing
+        assert_eq!(player_gravity.0, 0.0);
     }
 }

@@ -125,7 +125,7 @@ fn enemy_movement_animation(
 ) {
     for (mut sprite, texture_atlas_handle, mut movement_animation, on_move) in query.iter_mut() {
         // Do not animate if the player is not on move
-        if on_move.0 == false {
+        if !on_move.0 {
             continue;
         }
 
@@ -179,13 +179,12 @@ impl LdtkEntity for Patrol {
         _: &AssetServer,
         _: &mut Assets<TextureAtlas>,
     ) -> Self {
-        let mut points = Vec::new();
-        points.push(ldtk_pixel_coords_to_translation_pivoted(
+        let mut points = vec![ldtk_pixel_coords_to_translation_pivoted(
             entity_instance.px,
             layer_instance.c_hei * layer_instance.grid_size,
             IVec2::new(entity_instance.width, entity_instance.height),
             entity_instance.pivot,
-        ));
+        )];
 
         let ldtk_patrol = entity_instance
             .field_instances
@@ -194,18 +193,16 @@ impl LdtkEntity for Patrol {
             .expect("Should have 'patrol' field");
 
         if let FieldValue::Points(ldtk_points) = &ldtk_patrol.value {
-            for ldtk_point in ldtk_points {
-                if let Some(ldtk_point) = ldtk_point {
-                    let pixel_coords = (ldtk_point.as_vec2() + Vec2::new(0.5, 1.0))
-                        * Vec2::splat(layer_instance.grid_size as f32);
+            for ldtk_point in ldtk_points.iter().flatten() {
+                let pixel_coords = (ldtk_point.as_vec2() + Vec2::new(0.5, 1.0))
+                    * Vec2::splat(layer_instance.grid_size as f32);
 
-                    points.push(ldtk_pixel_coords_to_translation_pivoted(
-                        pixel_coords.as_ivec2(),
-                        layer_instance.c_hei * layer_instance.grid_size,
-                        IVec2::new(entity_instance.width, entity_instance.height),
-                        entity_instance.pivot,
-                    ));
-                }
+                points.push(ldtk_pixel_coords_to_translation_pivoted(
+                    pixel_coords.as_ivec2(),
+                    layer_instance.c_hei * layer_instance.grid_size,
+                    IVec2::new(entity_instance.width, entity_instance.height),
+                    entity_instance.pivot,
+                ));
             }
         }
 

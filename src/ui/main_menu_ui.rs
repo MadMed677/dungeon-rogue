@@ -141,6 +141,7 @@ fn destroy(mut commands: Commands, main_menu_ui_query: Query<Entity, With<MainMe
     commands.entity(main_menu_entity).despawn_recursive();
 }
 
+#[allow(clippy::type_complexity)]
 fn button_interaction(
     mut interaction_query: Query<
         (&Interaction, &mut UiColor, Option<&MenuButton>),

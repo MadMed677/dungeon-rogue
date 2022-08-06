@@ -12,7 +12,7 @@ struct Background;
 #[derive(PartialEq)]
 enum BackgroundMusicState {
     /// Music playing
-    Playing,
+    // Playing,
 
     /// Music has been paused
     Paused,
@@ -47,7 +47,7 @@ fn start_bg_music(background_audio: Res<AudioChannel<Background>>, audio_state: 
         }
 
         // We don't need to do anything if the song is already playing
-        BackgroundMusicState::Playing => {}
+        // BackgroundMusicState::Playing => {}
 
         // We have to resume the music then
         BackgroundMusicState::Paused => {

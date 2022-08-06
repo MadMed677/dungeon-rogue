@@ -109,13 +109,13 @@ fn setup(
 
         for (tutorial_type, mut tutorial, tutorial_triggered) in tutorial_query.iter_mut() {
             // If tutorial has been triggered let's return
-            if tutorial_triggered.0 == false {
+            if !tutorial_triggered.0 {
                 return;
             }
 
             // Create a tutorial UI
             let movement_tutorial_ui =
-                spawn_movement_ui(&mut commands, &asset_server, &sprites, &tutorial_type);
+                spawn_movement_ui(&mut commands, &asset_server, &sprites, tutorial_type);
 
             tutorial.ui_entities.insert(movement_tutorial_ui);
         }
