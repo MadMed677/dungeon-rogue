@@ -19,6 +19,22 @@ pub enum EnemyType {
     LongHair,
 }
 
+impl Plugin for EnemyPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Game)
+                .with_system(spawn_enemy)
+                .with_system(enemy_movement)
+                .with_system(enemy_movement_animation)
+                .with_system(dead)
+                .into(),
+        )
+        // Use the same name as it's covered in "LdtkMap"
+        .register_ldtk_entity::<EnemyBundle>("Mob");
+    }
+}
+
 impl Default for EnemyType {
     fn default() -> Self {
         Self::Durt
@@ -224,21 +240,6 @@ struct EnemyBundle {
     pub patrol: Patrol,
 }
 
-impl Plugin for EnemyPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(ApplicationState::Game)
-                .with_system(spawn_enemy)
-                .with_system(enemy_movement)
-                .with_system(enemy_movement_animation)
-                .into(),
-        )
-        // Use the same name as it's covered in "LdtkMap"
-        .register_ldtk_entity::<EnemyBundle>("Mob");
-    }
-}
-
 fn spawn_enemy(
     mut commands: Commands,
     materials: Res<Sprites>,
@@ -267,6 +268,7 @@ fn spawn_enemy(
             .insert(LockedAxes::ROTATION_LOCKED)
             .insert(Velocity::zero())
             .insert(Friction::new(3.0))
+            .insert(ExternalImpulse::default())
             // Set a default movement direction in on right. We will change it later in the system
             .insert(MovementDirection::Right)
             .insert(MovementAnimation {
@@ -286,5 +288,17 @@ fn spawn_enemy(
                 },
                 ..Default::default()
             });
+    }
+}
+
+/// Despawn an enemy when his health is equal or lower than 0
+fn dead(
+    mut commands: Commands,
+    enemy_query: Query<(Entity, &Health), (With<Enemy>, Changed<Health>)>,
+) {
+    for (enemy_entity, enemy_health) in enemy_query.iter() {
+        if enemy_health.current <= 0 {
+            commands.entity(enemy_entity).despawn_recursive();
+        }
     }
 }
