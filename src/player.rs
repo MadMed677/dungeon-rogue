@@ -440,13 +440,13 @@ mod player_tests {
         player::{spawn_player, Player, PlayerBundle},
         Speed,
     };
-    use crate::{Health, MovementDirection, PlayerIsDeadEvent};
+    use crate::{Climber, Health, MovementDirection, PlayerIsDeadEvent};
     use bevy::ecs::event::Events;
     use bevy::prelude::*;
     use bevy_ecs_ldtk::prelude::*;
-    use bevy_rapier2d::prelude::{ExternalImpulse, Velocity};
+    use bevy_rapier2d::prelude::{ExternalImpulse, GravityScale, Velocity};
 
-    use super::{dead, player_movement};
+    use super::{dead, ignore_gravity_during_climbing, player_movement};
 
     #[test]
     fn should_spawn_a_player_with_speed() {
@@ -644,6 +644,7 @@ mod player_tests {
         // We shouldn't have an impulse - this means that player don't jump
         assert_eq!(impulse.impulse, Vec2::new(0.0, 0.0));
     }
+
     #[test]
     fn player_should_jump_by_space() {
         let mut app = App::new();
@@ -727,5 +728,42 @@ mod player_tests {
         let player_died = player_died_reader.iter(player_died_events).next();
 
         assert!(player_died.is_some());
+    }
+
+    #[test]
+    fn should_disable_gravity_during_climbing() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(ignore_gravity_during_climbing)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        app.update();
+
+        let mut player_climber = app
+            .world
+            .get_mut::<Climber>(player_id)
+            .expect("Player must have a climber component");
+
+        // Add climbing as `true` to disable the gravity
+        player_climber.climbing = true;
+
+        app.update();
+
+        let player_gravity = app
+            .world
+            .get::<GravityScale>(player_id)
+            .expect("Player must have a gravity component");
+
+        // Gravity should be 0.0 when player is climbing
+        assert_eq!(player_gravity.0, 0.0);
     }
 }
