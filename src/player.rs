@@ -267,7 +267,7 @@ fn spawn_ground_sensor(
             commands.entity(entity).with_children(|parent| {
                 parent
                     .spawn()
-                    .insert(Sensor(true))
+                    .insert(Sensor)
                     .insert(detector_shape)
                     .insert(Transform::from_translation(sensor_translation))
                     .insert(GlobalTransform::default())

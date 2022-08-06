@@ -39,7 +39,7 @@ fn spawn_dead_oob(
     for (dead_entity, dead_transform) in dead_oob.iter() {
         commands
             .entity(dead_entity)
-            .insert(Sensor(true))
+            .insert(Sensor)
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Collider::cuboid(8.0, 8.0))
             .insert_bundle(SpriteBundle {
