@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{
-    ApplicationState, ApplicationStateMenu, ExitTheGameEvent, ResumeTheGameEvent,
-};
+use crate::{ApplicationState, ApplicationStateMenu, ExitTheGameEvent, ResumeTheGameEvent};
 
 use super::components::{
     build_classic_button, build_classic_text, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,

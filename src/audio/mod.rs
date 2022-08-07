@@ -12,7 +12,7 @@ struct Background;
 #[derive(PartialEq, Debug)]
 enum BackgroundMusicState {
     /// Music playing
-    // Playing,
+    Playing,
 
     /// Music has been paused
     Paused,
@@ -29,7 +29,7 @@ pub struct AudioState {
     bg_handle: Handle<AudioSource>,
     bg_state: BackgroundMusicState,
 
-    pub volume: f32,
+    pub volume: i8,
 }
 
 impl Plugin for GameAudioPlugin {
@@ -42,21 +42,31 @@ impl Plugin for GameAudioPlugin {
     }
 }
 
-fn start_bg_music(background_audio: Res<AudioChannel<Background>>, audio_state: Res<AudioState>) {
-    match audio_state.bg_state {
-        // If the song is stopped or never played before we just need to start it
-        BackgroundMusicState::Stopped => {
-            background_audio.play_looped(audio_state.bg_handle.clone());
-            background_audio.set_volume(audio_state.volume);
+fn start_bg_music(
+    background_audio: Res<AudioChannel<Background>>,
+    mut audio_state: ResMut<AudioState>,
+) {
+    if audio_state.state {
+        match audio_state.bg_state {
+            // If the song is stopped or never played before we just need to start it
+            BackgroundMusicState::Stopped => {
+                background_audio.play_looped(audio_state.bg_handle.clone());
+                audio_state.bg_state = BackgroundMusicState::Playing;
+            }
+
+            // We don't need to do anything if the song is already playing
+            BackgroundMusicState::Playing => {}
+
+            // We have to resume the music then
+            BackgroundMusicState::Paused => {
+                background_audio.resume();
+                audio_state.bg_state = BackgroundMusicState::Playing;
+            }
         }
 
-        // We don't need to do anything if the song is already playing
-        // BackgroundMusicState::Playing => {}
-
-        // We have to resume the music then
-        BackgroundMusicState::Paused => {
-            background_audio.resume();
-        }
+        background_audio.set_volume(audio_state.volume as f32 / 10.0);
+    } else {
+        background_audio.stop();
     }
 }
 
@@ -64,8 +74,15 @@ fn stop_bg_music(
     background_audio: Res<AudioChannel<Background>>,
     mut audio_state: ResMut<AudioState>,
 ) {
-    background_audio.pause();
-    audio_state.bg_state = BackgroundMusicState::Paused;
+    // If the audio is turned on we just need to pause the music
+    // Otherwise - stop the music and change the BackgroundMusicState
+    if audio_state.state {
+        background_audio.pause();
+        audio_state.bg_state = BackgroundMusicState::Paused;
+    } else {
+        background_audio.stop();
+        audio_state.bg_state = BackgroundMusicState::Stopped;
+    }
 }
 
 fn load_audio(mut commands: Commands, assets: Res<AssetServer>) {
@@ -79,6 +96,6 @@ fn load_audio(mut commands: Commands, assets: Res<AssetServer>) {
 
         bg_handle: bgm_handle,
         bg_state: BackgroundMusicState::Stopped,
-        volume: 0.5,
+        volume: 5,
     });
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.8] - 2022-08-07
+### Added
+- Add damage to the enemy when the player interacts with them.
+- Add an ability to change settings. For now, it's only
+music
+  - Ability to turn on / off music
+  - Ability to increase / decrease volume
+  - Ability to go back to the main menu
+
+### Changed
+- Move `MainMenuUI` and `DeadMenuUI` into `UI` plugin and add only this plugin in `main.rs`. We may add
+additional UI plugins later and it will not affect main file.
+
 ## [0.1.7] - 2022-07-24
 | Out-of bounce dead | Enemy damage |
 | ------------------ | ------------ |
