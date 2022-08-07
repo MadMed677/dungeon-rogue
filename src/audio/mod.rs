@@ -9,7 +9,7 @@ pub struct GameAudioPlugin;
 #[derive(Component, Default, Clone)]
 struct Background;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum BackgroundMusicState {
     /// Music playing
     // Playing,
@@ -21,11 +21,15 @@ enum BackgroundMusicState {
     Stopped,
 }
 
-struct AudioState {
+#[derive(Debug)]
+pub struct AudioState {
+    // Describes that audio is turned `on` or `off` (by default it's `true`)
+    pub state: bool,
+
     bg_handle: Handle<AudioSource>,
     bg_state: BackgroundMusicState,
 
-    volume: f32,
+    pub volume: f32,
 }
 
 impl Plugin for GameAudioPlugin {
@@ -68,6 +72,11 @@ fn load_audio(mut commands: Commands, assets: Res<AssetServer>) {
     let bgm_handle = assets.load("audio/deepwater-ruins.ogg");
 
     commands.insert_resource(AudioState {
+        // By default turn on the audio. Later we should
+        //  read this information from the disk (because maybe the user)
+        //  decided to turn the audio off
+        state: true,
+
         bg_handle: bgm_handle,
         bg_state: BackgroundMusicState::Stopped,
         volume: 0.5,

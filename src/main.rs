@@ -131,6 +131,9 @@ enum ApplicationStateMenu {
 
     /// Describes that currently a player in a dead menu (when the player is dead)
     Dead,
+
+    /// Describes that currently a player in a settings menu (turn on/off, change volume of the music, etc...)
+    Settings,
 }
 
 pub struct PauseTheGameEvent;
