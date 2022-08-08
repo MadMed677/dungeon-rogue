@@ -47,6 +47,8 @@ fn start_bg_music(
     mut audio_state: ResMut<AudioState>,
 ) {
     if audio_state.state {
+        background_audio.set_volume(audio_state.volume as f32 / 10.0);
+
         match audio_state.bg_state {
             // If the song is stopped or never played before we just need to start it
             BackgroundMusicState::Stopped => {
@@ -63,8 +65,6 @@ fn start_bg_music(
                 audio_state.bg_state = BackgroundMusicState::Playing;
             }
         }
-
-        background_audio.set_volume(audio_state.volume as f32 / 10.0);
     } else {
         background_audio.stop();
     }

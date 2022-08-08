@@ -11,39 +11,9 @@ impl Plugin for CombatPlugin {
         app.add_system_set(
             ConditionSet::new()
                 .run_in_state(ApplicationState::Game)
-                .with_system(combat_by_keyboard)
                 .with_system(combat_interaction_detection)
-                .with_system(impulse_by_keyboard)
                 .into(),
         );
-    }
-}
-
-fn impulse_by_keyboard(
-    keyboard: Res<Input<KeyCode>>,
-    mut player_impulse: Query<&mut ExternalImpulse, With<Player>>,
-) {
-    for mut impulse in player_impulse.iter_mut() {
-        if keyboard.just_pressed(KeyCode::I) {
-            impulse.impulse = Vec2::new(-300.0, 0.0);
-        }
-    }
-
-    // for mut force in player_force.iter_mut() {
-    //     if keyboard.just_pressed(KeyCode::I) {
-    //         force.force = Vec2::new(100.0, 0.0);
-    //     }
-    // }
-}
-
-fn combat_by_keyboard(
-    keyboard: Res<Input<KeyCode>>,
-    mut health_query: Query<&mut Health, With<Player>>,
-) {
-    for mut health in health_query.iter_mut() {
-        if keyboard.just_pressed(KeyCode::H) && health.current != 0 {
-            health.current -= 1;
-        }
     }
 }
 

@@ -147,7 +147,10 @@ fn change_music_volume(
     mut music_text_query: Query<(&mut Text, &SettingsTextType), With<SettingsTextType>>,
 ) {
     for event in change_music_volume_event.iter() {
-        audio_state.volume += event.0;
+        if (event.0 == -1 && audio_state.volume != 0) || (event.0 == 1 && audio_state.volume != 10)
+        {
+            audio_state.volume += event.0;
+        }
 
         for (mut music_text_text, _) in music_text_query.iter_mut() {
             // We should check the Volume text type when we will have more than
