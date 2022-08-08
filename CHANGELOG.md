@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.8] - 2022-08-08
+![0.1.8](./docs/dungeon_rogue_0_1_8.gif)
+
+### Added
+- Add damage to the enemy when the player interacts with them.
+- Add an ability to change settings. For now, it's only
+music
+  - Ability to turn on / off music
+  - Ability to increase / decrease volume
+  - Ability to go back to the main menu
+
+### Changed
+- Move `MainMenuUI` and `DeadMenuUI` into `UI` plugin and add only this plugin in `main.rs`. We may add
+additional UI plugins later and it will not affect main file.
+
+---
+
 ## [0.1.7] - 2022-07-24
 | Out-of bounce dead | Enemy damage |
 | ------------------ | ------------ |
@@ -19,6 +36,8 @@
 - Add more complex game state. Add additional game state for `Game` and `Menu` states. Now `Menu` has `Main` 
   and`Dead` sub states.
 
+---
+
 ## [0.1.6] - 2022-07-12
 ![0.1.6](./docs/dungeon_rogue_0_1_6.gif)
 
@@ -32,6 +51,8 @@
   affect tutorials and even the monsters removes tutorials after collision interactions.
 - Change enemy sprite rotation when the monster goes on left or right
 
+---
+
 ## [0.1.5] - 2022-06-21
 
 ### Added
@@ -44,6 +65,8 @@ how the levels has been created or how ground detection
 checks new loaded levels.
 
 I'll try to play with it and fix it in the next release.
+
+---
 
 ## [0.1.4] - 2022-06-10
 

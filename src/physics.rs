@@ -15,7 +15,7 @@ impl Plugin for PhysicsPlugin {
         ))
         // Change gravity from -98.0 to -300.0
         .insert_resource(RapierConfiguration {
-            gravity: Vec2::new(1.0, -300.0),
+            gravity: Vec2::new(0.0, -300.0),
             ..Default::default()
         });
     }

@@ -9,13 +9,25 @@ use super::components::{
 
 pub struct MainMenuUIPlugin;
 
+impl Plugin for MainMenuUIPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Menu(ApplicationStateMenu::Main))
+                .with_system(button_interaction)
+                .into(),
+        )
+        .add_enter_system(ApplicationState::Menu(ApplicationStateMenu::Main), setup)
+        .add_exit_system(ApplicationState::Menu(ApplicationStateMenu::Main), destroy);
+    }
+}
+
 #[derive(Component)]
 struct MainMenuUI;
 
 enum MenuButtonType {
     Play,
-    Load,
-    Save,
+    Settings,
     Exit,
 }
 
@@ -97,22 +109,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         .with_children(|parent| {
                             parent
                                 .spawn_bundle(build_classic_button())
-                                .insert(MenuButton(MenuButtonType::Save))
+                                .insert(MenuButton(MenuButtonType::Settings))
                                 .with_children(|parent| {
                                     parent.spawn_bundle(build_classic_text(
-                                        "Save",
-                                        &asset_server,
-                                        None,
-                                    ));
-                                });
-                        })
-                        .with_children(|parent| {
-                            parent
-                                .spawn_bundle(build_classic_button())
-                                .insert(MenuButton(MenuButtonType::Load))
-                                .with_children(|parent| {
-                                    parent.spawn_bundle(build_classic_text(
-                                        "Load",
+                                        "Settings",
                                         &asset_server,
                                         None,
                                     ));
@@ -143,6 +143,7 @@ fn destroy(mut commands: Commands, main_menu_ui_query: Query<Entity, With<MainMe
 
 #[allow(clippy::type_complexity)]
 fn button_interaction(
+    mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut UiColor, Option<&MenuButton>),
         (Changed<Interaction>, With<Button>),
@@ -162,7 +163,11 @@ fn button_interaction(
                         MenuButtonType::Exit => {
                             exit_game_event.send(ExitTheGameEvent);
                         }
-                        _ => {}
+                        MenuButtonType::Settings => {
+                            commands.insert_resource(NextState(ApplicationState::Menu(
+                                ApplicationStateMenu::Settings,
+                            )));
+                        }
                     }
                 }
             }
@@ -173,18 +178,5 @@ fn button_interaction(
                 *color = UiColor(NORMAL_BUTTON);
             }
         }
-    }
-}
-
-impl Plugin for MainMenuUIPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(ApplicationState::Menu(ApplicationStateMenu::Main))
-                .with_system(button_interaction)
-                .into(),
-        )
-        .add_enter_system(ApplicationState::Menu(ApplicationStateMenu::Main), setup)
-        .add_exit_system(ApplicationState::Menu(ApplicationStateMenu::Main), destroy);
     }
 }

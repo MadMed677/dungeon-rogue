@@ -31,8 +31,7 @@ use out_of_bounce::OutOfBouncePlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use tutorial::TutorialPlugin;
-use ui::dead_menu_ui::DeadMenuUIPlugin;
-use ui::main_menu_ui::MainMenuUIPlugin;
+use ui::UIPlugin;
 
 #[derive(Component, Inspectable, Debug)]
 pub struct Speed(f32);
@@ -132,6 +131,9 @@ enum ApplicationStateMenu {
 
     /// Describes that currently a player in a dead menu (when the player is dead)
     Dead,
+
+    /// Describes that currently a player in a settings menu (turn on/off, change volume of the music, etc...)
+    Settings,
 }
 
 pub struct PauseTheGameEvent;
@@ -243,8 +245,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)
-        .add_plugin(MainMenuUIPlugin)
-        .add_plugin(DeadMenuUIPlugin)
+        .add_plugin(UIPlugin)
         .add_plugin(GameAudioPlugin)
         .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)
