@@ -38,7 +38,7 @@ impl Plugin for GameAudioPlugin {
         app.add_enter_system(ApplicationState::Game, start_bg_music)
             .add_exit_system(ApplicationState::Game, stop_bg_music)
             .add_plugin(AudioPlugin)
-            .add_startup_system_to_stage(StartupStage::PreStartup, load_audio)
+            .add_startup_system_to_stage(StartupStage::PostStartup, load_audio)
             .add_system(sync_audio_state_and_settings)
             .add_audio_channel::<Background>();
     }
@@ -47,10 +47,7 @@ impl Plugin for GameAudioPlugin {
 fn start_bg_music(
     background_audio: Res<AudioChannel<Background>>,
     mut audio_state: ResMut<AudioState>,
-    settings: Res<Settings>,
 ) {
-    println!("Settings: {:?}", settings.audio);
-
     if audio_state.state {
         background_audio.set_volume(audio_state.volume as f32 / 10.0);
 
@@ -98,17 +95,19 @@ fn stop_bg_music(
     }
 }
 
-fn load_audio(mut commands: Commands, assets: Res<AssetServer>) {
+/// Loads audio. Initialized in PostStartup stage to be sure
+///  that all `add_startup_systems` has been initialized
+fn load_audio(mut commands: Commands, assets: Res<AssetServer>, settings: Res<Settings>) {
     let bgm_handle = assets.load("audio/deepwater-ruins.ogg");
 
     commands.insert_resource(AudioState {
         // By default turn on the audio. Later we should
         //  read this information from the disk (because maybe the user)
         //  decided to turn the audio off
-        state: true,
+        state: settings.audio.state,
 
         bg_handle: bgm_handle,
         bg_state: BackgroundMusicState::Stopped,
-        volume: 5,
+        volume: settings.audio.volume,
     });
 }
