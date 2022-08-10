@@ -2,11 +2,8 @@ use bevy::prelude::*;
 use bevy_kira_audio::{AudioApp, AudioChannel, AudioPlugin, AudioSource};
 use iyes_loopless::prelude::*;
 
+use crate::settings::Settings;
 use crate::ApplicationState;
-
-mod audio_settings;
-
-pub use audio_settings::Settings;
 
 pub struct GameAudioPlugin;
 
@@ -42,6 +39,7 @@ impl Plugin for GameAudioPlugin {
             .add_exit_system(ApplicationState::Game, stop_bg_music)
             .add_plugin(AudioPlugin)
             .add_startup_system_to_stage(StartupStage::PreStartup, load_audio)
+            .add_system(sync_audio_state_and_settings)
             .add_audio_channel::<Background>();
     }
 }
@@ -49,9 +47,9 @@ impl Plugin for GameAudioPlugin {
 fn start_bg_music(
     background_audio: Res<AudioChannel<Background>>,
     mut audio_state: ResMut<AudioState>,
+    settings: Res<Settings>,
 ) {
-    let audio_settings = Settings::load();
-    println!("Settings: {:?}", audio_settings);
+    println!("Settings: {:?}", settings.audio);
 
     if audio_state.state {
         background_audio.set_volume(audio_state.volume as f32 / 10.0);
@@ -74,6 +72,14 @@ fn start_bg_music(
         }
     } else {
         background_audio.stop();
+    }
+}
+
+/// Sync audio state when its change with global settings
+fn sync_audio_state_and_settings(audio_state: Res<AudioState>, mut settings: ResMut<Settings>) {
+    if audio_state.is_changed() {
+        settings.audio.state = audio_state.state;
+        settings.audio.volume = audio_state.volume;
     }
 }
 
