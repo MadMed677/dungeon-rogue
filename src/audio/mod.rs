@@ -4,6 +4,10 @@ use iyes_loopless::prelude::*;
 
 use crate::ApplicationState;
 
+mod audio_settings;
+
+pub use audio_settings::Settings;
+
 pub struct GameAudioPlugin;
 
 #[derive(Component, Default, Clone)]
@@ -46,6 +50,9 @@ fn start_bg_music(
     background_audio: Res<AudioChannel<Background>>,
     mut audio_state: ResMut<AudioState>,
 ) {
+    let audio_settings = Settings::load();
+    println!("Settings: {:?}", audio_settings);
+
     if audio_state.state {
         background_audio.set_volume(audio_state.volume as f32 / 10.0);
 
