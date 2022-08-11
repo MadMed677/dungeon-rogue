@@ -32,7 +32,6 @@ use out_of_bounce::OutOfBouncePlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use settings::SettingsPlugin;
-use tutorial::TutorialPlugin;
 use ui::UIPlugin;
 
 #[derive(Component, Inspectable, Debug)]
@@ -249,7 +248,10 @@ fn main() {
         .add_startup_system(setup)
         .add_plugin(UIPlugin)
         .add_plugin(GameAudioPlugin)
-        .add_plugin(TutorialPlugin)
+        // Deactivate tutorial for now. Because there is no ability to
+        //  spawn tutorial and change visibility on menu and do not
+        //  destroy the whole UI at all
+        // .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(HudPlugin)
         .add_plugin(MapPlugin)

@@ -10,6 +10,19 @@ struct MovementTutorialUi;
 
 pub struct TutorialUiPlugin;
 
+impl Plugin for TutorialUiPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Game)
+                .with_system(spawn_tutorial)
+                .into(),
+        )
+        // .add_enter_system(ApplicationState::Game, setup)
+        .add_exit_system(ApplicationState::Game, destroy);
+    }
+}
+
 fn spawn_movement_ui(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
@@ -91,7 +104,7 @@ fn spawn_movement_ui(
         .id()
 }
 
-fn setup(
+fn spawn_tutorial(
     mut commands: Commands,
     sprites: Res<Sprites>,
     asset_server: Res<AssetServer>,
@@ -108,9 +121,9 @@ fn setup(
         }
 
         for (tutorial_type, mut tutorial, tutorial_triggered) in tutorial_query.iter_mut() {
-            // If tutorial has been triggered let's return
+            // Do not render not triggered tutorials
             if !tutorial_triggered.0 {
-                return;
+                continue;
             }
 
             // Create a tutorial UI
@@ -122,6 +135,9 @@ fn setup(
     }
 }
 
+// Destroy should change visibility but not remove the entities at all
+// This should be fixed after update to `bevy@v0.8`
+// @link - https://github.com/bevyengine/bevy/pull/5310
 fn destroy(
     mut commands: Commands,
     movement_tutorial_ui_query: Query<Entity, With<MovementTutorialUi>>,
@@ -130,18 +146,5 @@ fn destroy(
         commands
             .entity(movement_tutorial_entity)
             .despawn_recursive();
-    }
-}
-
-impl Plugin for TutorialUiPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(ApplicationState::Game)
-                .with_system(setup)
-                .into(),
-        )
-        // .add_enter_system(ApplicationState::Game, setup)
-        .add_exit_system(ApplicationState::Game, destroy);
     }
 }
