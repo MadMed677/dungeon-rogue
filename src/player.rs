@@ -7,14 +7,15 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, Climbable, Climber, Health, MovementAnimation, MovementDirection, OnMove,
-    PlayerIsDeadEvent, Speed, Sprites,
+    ApplicationState, Climbable, Climber, Health, IdleAnimation, MovementAnimation,
+    MovementDirection, OnMove, PlayerIsDeadEvent, Speed, Sprites,
 };
 
 #[derive(Debug, Inspectable)]
 enum PlayerNames {
     Pumpkin,
     Dragon,
+    Apple,
 }
 
 #[derive(Component, Debug, Inspectable)]
@@ -54,8 +55,10 @@ impl Plugin for PlayerPlugin {
                 .run_in_state(ApplicationState::Game)
                 .with_system(spawn_player)
                 .with_system(player_movement)
-                .with_system(player_movement_animation)
+                .with_system(player_idle_animation)
+                .with_system(player_run_animation)
                 .with_system(player_jump)
+                .with_system(change_player_textures)
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(change_player_texture)
@@ -74,7 +77,7 @@ fn spawn_player(
     player_query: Query<(Entity, &Transform), Added<Player>>,
 ) {
     if let Ok((player_entity, transform)) = player_query.get_single() {
-        let sprite_asset_info = &materials.player.pumpkin;
+        let sprite_asset_info = &materials.player.apple.idle;
 
         let sprite_width = sprite_asset_info.width;
         let sprite_height = sprite_asset_info.height;
@@ -100,7 +103,7 @@ fn spawn_player(
                     translation: transform.translation,
                     rotation: transform.rotation,
                     // scale: transform.scale,
-                    scale: Vec3::new(0.8, 0.8, 1.0),
+                    scale: Vec3::new(0.7, 0.7, 1.0),
                 },
                 sprite: TextureAtlasSprite {
                     flip_x: match &player_direction {
@@ -111,8 +114,11 @@ fn spawn_player(
                 },
                 ..Default::default()
             })
-            .insert(PlayerName(PlayerNames::Pumpkin))
+            .insert(PlayerName(PlayerNames::Apple))
             .insert(player_direction)
+            .insert(IdleAnimation {
+                timer: Timer::from_seconds(0.1, true),
+            })
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
@@ -166,9 +172,15 @@ fn player_movement(
         velocity.linvel.x = move_delta_x;
 
         // Change `OnMove` component
+        // But we need to change `OnMove` component
+        //  only if we need it. Do not update OnMove
+        //  component every time. Otherwise `Changed<OnMove>`
+        //  signal will be called everytime
         if move_delta_x != 0.0 {
-            on_move.0 = true;
-        } else {
+            if !on_move.0 {
+                on_move.0 = true;
+            }
+        } else if on_move.0 {
             on_move.0 = false;
         }
 
@@ -202,6 +214,37 @@ fn player_movement(
     }
 }
 
+fn change_player_textures(
+    mut commands: Commands,
+    materials: Res<Sprites>,
+    mut movement_query: Query<
+        (Entity, &mut TextureAtlasSprite, &OnMove),
+        (With<Player>, Changed<OnMove>),
+    >,
+) {
+    for _ in movement_query.iter() {
+        println!("Another tick");
+    }
+
+    if let Ok((entity, mut sprite, on_move)) = movement_query.get_single_mut() {
+        println!("Tick");
+        // If on_move is true that means that we have to
+        //  change sprite to `run`
+        // Otherwise - to `idle`
+        if on_move.0 {
+            commands
+                .entity(entity)
+                .insert(materials.player.apple.run.texture.clone());
+        } else {
+            commands
+                .entity(entity)
+                .insert(materials.player.apple.idle.texture.clone());
+        }
+
+        sprite.index = 0;
+    }
+}
+
 fn player_jump(
     keyboard: Res<Input<KeyCode>>,
     mut player_query: Query<(&mut ExternalImpulse, &mut Climber, &GroundDetection), With<Player>>,
@@ -216,7 +259,41 @@ fn player_jump(
     }
 }
 
-fn player_movement_animation(
+fn player_idle_animation(
+    time: Res<Time>,
+    mut query: Query<
+        (
+            &OnMove,
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+            &mut IdleAnimation,
+        ),
+        With<Player>,
+    >,
+) {
+    for (on_move, mut sprite, texture_atlas_handle, mut idle_animation) in query.iter_mut() {
+        // Do nothing if the player is not in idle
+        if on_move.0 {
+            return;
+        }
+
+        idle_animation.timer.tick(time.delta());
+
+        if idle_animation.timer.finished() {
+            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+
+            sprite.index += 1;
+
+            // 24 - is a maximum amount of textures for idle state
+            if sprite.index == 24 {
+                // Loop the animation
+                sprite.index = 0;
+            }
+        }
+    }
+}
+
+fn player_run_animation(
     texture_atlases: Res<Assets<TextureAtlas>>,
     time: Res<Time>,
     mut query: Query<
@@ -234,8 +311,6 @@ fn player_movement_animation(
         //  set the first sprite which is equal to
         //  player default state and do nothing
         if !on_move.0 {
-            sprite.index = 0;
-
             return;
         }
 
@@ -392,6 +467,11 @@ fn change_player_texture(
                     &materials.player.dragon
                 }
                 PlayerNames::Dragon => {
+                    player_name.0 = PlayerNames::Apple;
+
+                    &materials.player.apple.run
+                }
+                PlayerNames::Apple => {
                     player_name.0 = PlayerNames::Pumpkin;
 
                     &materials.player.pumpkin

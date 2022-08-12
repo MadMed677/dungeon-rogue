@@ -38,6 +38,11 @@ use ui::UIPlugin;
 pub struct Speed(f32);
 
 #[derive(Component)]
+pub struct IdleAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
 pub struct MovementAnimation {
     timer: Timer,
 }
@@ -95,9 +100,15 @@ struct SpriteAssetInfo {
     texture: Handle<TextureAtlas>,
 }
 
+struct PlayerAppleStateSprites {
+    idle: SpriteAssetInfo,
+    run: SpriteAssetInfo,
+}
+
 struct PlayerSprites {
     pumpkin: SpriteAssetInfo,
     dragon: SpriteAssetInfo,
+    apple: PlayerAppleStateSprites,
 }
 
 struct MonstersSprites {
@@ -173,6 +184,28 @@ fn setup(
         1,
     );
 
+    let apple_idle_texture_width = 34.0;
+    let apple_idle_texture_height = 32.0;
+    let apple_idle_texture_handle = asset_server.load("atlas/player/apple@idle-sheet.png");
+    let apple_idle_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_idle_texture_handle,
+        Vec2::new(apple_idle_texture_width, apple_idle_texture_height),
+        10,
+        3,
+        Vec2::new(30.0, 32.0),
+    );
+
+    let apple_run_texture_width = 26.0;
+    let apple_run_texture_height = 34.0;
+    let apple_run_texture_handle = asset_server.load("atlas/player/apple@run-sheet.png");
+    let apple_run_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_run_texture_handle,
+        Vec2::new(apple_run_texture_width, apple_run_texture_height),
+        10,
+        1,
+        Vec2::new(38.0, 30.0),
+    );
+
     let gray_monster_texture_width = 16.0;
     let gray_monster_texture_height = 16.0;
     let gray_monster_texture_handle = asset_server.load("atlas/enemies/gray_monster.png");
@@ -208,6 +241,18 @@ fn setup(
                 width: dragon_texture_width,
                 height: dragon_texture_height,
                 texture: texture_atlases.add(dragon_texture_atlas),
+            },
+            apple: PlayerAppleStateSprites {
+                idle: SpriteAssetInfo {
+                    width: apple_idle_texture_width,
+                    height: apple_idle_texture_height,
+                    texture: texture_atlases.add(apple_idle_texture_atlas),
+                },
+                run: SpriteAssetInfo {
+                    width: apple_run_texture_width,
+                    height: apple_run_texture_height,
+                    texture: texture_atlases.add(apple_run_texture_atlas),
+                },
             },
         },
         monsters: MonstersSprites {
