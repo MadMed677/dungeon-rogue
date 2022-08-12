@@ -1,4 +1,4 @@
-# Dungeon Rogue Game (the name may change in the future)
+# Dungeon Rogue Game ![Status](https://github.com/madmed677/dungeon-rogue/actions/workflows/general.yml/badge.svg)
 
 > **Note**
 > The work is still in progress
@@ -9,14 +9,15 @@ helps me to understand the basic of game development.
 
 During this pet project I'd like to learn:
 ### Map
-- How to deal with `map`. How to render the map, how to add collisions to the map and some interactions with it
-- How to create multiple levels
+- [x] How to deal with `map`. How to render the map, how to add collisions to the map and some interactions with it
+- [x] How to create multiple levels
+- [ ] How to create multiple game behaviour. Like in [It Takes Two](https://www.hazelight.se/games/it-takes-two/)
 
 
 ### Animations
-- How to animate the player
-- How to animate the enemies
-- How to animate the player with multiple animations (when the player are walking, climbing) 
+- [x] How to animate the player
+- [x] How to animate the enemies
+- [ ] How to animate the player with multiple animations (when the player are walking, climbing) 
 
 ## Game Design Document
 ### Game design

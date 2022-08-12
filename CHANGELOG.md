@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.9] - 2022-08-10
+
+### Added
+- Add `settings.ron` file which stores all basic information about the game settings
+- Create `temporary/settings.ron` which contain instance of user settings. It's bein created only once when it's absent.
+- Read from settings to start the game with correct audio settings.
+
+### Removed
+- Disable `TutorialPlugin` for now because it has a bug which is described in the same file.
+Tutorial should be turned on when the game will be upgraded to `bevy@0.8` version
+
 ## [0.1.8] - 2022-08-08
 ![0.1.8](./docs/dungeon_rogue_0_1_8.gif)
 

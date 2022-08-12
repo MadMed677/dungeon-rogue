@@ -1,6 +1,6 @@
 [package]
 name = "dungeon_rogue"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -27,6 +27,8 @@ bevy_ecs_ldtk = "0.3"
 bevy_rapier2d = { version = "0.15", features = ["simd-stable", "debug-render"] }
 bevy-inspector-egui = "0.11"
 iyes_loopless = "0.5.1"
+serde = "1.0.142"
+ron = "0.7.1"
 
 [features]
 debug = []

@@ -1,0 +1,6 @@
+Settings(
+    audio: Audio(
+        state: true,
+        volume: 5,
+    )
+)

@@ -10,6 +10,7 @@ mod map;
 mod out_of_bounce;
 mod physics;
 mod player;
+mod settings;
 mod tests;
 mod tutorial;
 mod ui;
@@ -30,7 +31,7 @@ use map::MapPlugin;
 use out_of_bounce::OutOfBouncePlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
-use tutorial::TutorialPlugin;
+use settings::SettingsPlugin;
 use ui::UIPlugin;
 
 #[derive(Component, Inspectable, Debug)]
@@ -247,11 +248,15 @@ fn main() {
         .add_startup_system(setup)
         .add_plugin(UIPlugin)
         .add_plugin(GameAudioPlugin)
-        .add_plugin(TutorialPlugin)
+        // Deactivate tutorial for now. Because there is no ability to
+        //  spawn tutorial and change visibility on menu and do not
+        //  destroy the whole UI at all
+        // .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)
         .add_plugin(HudPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
+        .add_plugin(SettingsPlugin)
         .add_plugin(OutOfBouncePlugin)
         .add_plugin(EnemyPlugin)
         .add_plugin(CombatPlugin)

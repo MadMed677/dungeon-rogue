@@ -17,14 +17,25 @@ impl Plugin for CombatPlugin {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn combat_interaction_detection(
     mut collisions: EventReader<CollisionEvent>,
     mut player_query: Query<
-        (&mut Health, &mut ExternalImpulse, &GlobalTransform),
+        (
+            &mut Health,
+            &mut ExternalImpulse,
+            &Collider,
+            &GlobalTransform,
+        ),
         (With<Player>, Without<Enemy>),
     >,
     mut enemy_query: Query<
-        (&mut Health, &mut ExternalImpulse, &GlobalTransform),
+        (
+            &mut Health,
+            &mut ExternalImpulse,
+            &Collider,
+            &GlobalTransform,
+        ),
         (With<Enemy>, Without<Player>),
     >,
 ) {
@@ -32,18 +43,55 @@ fn combat_interaction_detection(
         // Now impulse by `x` axis looks so sharp. I have to understand how to make it
         //  smooth and only after that it would be possible to increase this value
         //  up to 100 or 300 depends on smoothness
-        let impulse_force = 0.0;
+        let impulse_force_horizontal = 30.0;
+        let impulse_force_vertical = 10.0;
 
         match collision {
             CollisionEvent::Started(collider_a, collider_b, _) => {
-                if let Ok((mut player_health, mut player_impulse, player_transform)) =
-                    player_query.get_mut(*collider_a)
+                let player = if let Ok(pl1) = player_query.get_mut(*collider_a) {
+                    Some(pl1)
+                } else if let Ok(pl2) = player_query.get_mut(*collider_b) {
+                    Some(pl2)
+                } else {
+                    None
+                };
+
+                let enemy = if let Ok(en1) = enemy_query.get_mut(*collider_b) {
+                    Some(en1)
+                } else if let Ok(en2) = enemy_query.get_mut(*collider_a) {
+                    Some(en2)
+                } else {
+                    None
+                };
+
+                if let Some((
+                    mut player_health,
+                    mut player_impulse,
+                    player_collider,
+                    player_transform,
+                )) = player
                 {
-                    if let Ok((mut enemy_health, mut enemy_impulse, enemy_transform)) =
-                        enemy_query.get_mut(*collider_b)
+                    if let Some((
+                        mut enemy_health,
+                        mut enemy_impulse,
+                        enemy_collider,
+                        enemy_transform,
+                    )) = enemy
                     {
-                        // If player below enemy - it should take hit. Otherwise - enemy
-                        if player_transform.translation.y < enemy_transform.translation.y {
+                        let player_half_size = player_collider
+                            .as_cuboid()
+                            .expect("Player collider must be cuboid")
+                            .half_extents();
+
+                        let enemy_half_size = enemy_collider
+                            .as_cuboid()
+                            .expect("Enemy collider must be cuboid")
+                            .half_extents();
+
+                        if ((player_transform.translation.y - player_half_size.y)
+                            - (enemy_transform.translation.y + enemy_half_size.y))
+                            < -3.0
+                        {
                             if player_health.current > 0 {
                                 player_health.current -= 1;
                             }
@@ -53,42 +101,16 @@ fn combat_interaction_detection(
 
                         // We should push player on left - otherwise - on right
                         if player_transform.translation.x < enemy_transform.translation.x {
-                            player_impulse.impulse = Vec2::new(-impulse_force, 0.0);
-                            enemy_impulse.impulse = Vec2::new(impulse_force, 0.0);
+                            player_impulse.impulse =
+                                Vec2::new(-impulse_force_horizontal, impulse_force_vertical);
+                            enemy_impulse.impulse =
+                                Vec2::new(impulse_force_horizontal, impulse_force_vertical);
                         } else {
-                            player_impulse.impulse = Vec2::new(impulse_force, 0.0);
-                            enemy_impulse.impulse = Vec2::new(-impulse_force, 0.0);
+                            player_impulse.impulse =
+                                Vec2::new(impulse_force_horizontal, impulse_force_vertical);
+                            enemy_impulse.impulse =
+                                Vec2::new(-impulse_force_horizontal, impulse_force_vertical);
                         }
-
-                        continue;
-                    }
-                }
-
-                if let Ok((mut player_health, mut player_impulse, player_transform)) =
-                    player_query.get_mut(*collider_b)
-                {
-                    if let Ok((mut enemy_health, mut enemy_impulse, enemy_transform)) =
-                        enemy_query.get_mut(*collider_a)
-                    {
-                        // If player below enemy - it should take hit. Otherwise - enemy
-                        if player_transform.translation.y - enemy_transform.translation.y < 5.0 {
-                            if player_health.current > 0 {
-                                player_health.current -= 1;
-                            }
-                        } else if enemy_health.current > 0 {
-                            enemy_health.current -= 1;
-                        }
-
-                        // We should push player on left - otherwise - on right
-                        if player_transform.translation.x < enemy_transform.translation.x {
-                            player_impulse.impulse = Vec2::new(-impulse_force, 0.0);
-                            enemy_impulse.impulse = Vec2::new(impulse_force, 0.0);
-                        } else {
-                            player_impulse.impulse = Vec2::new(impulse_force, 0.0);
-                            enemy_impulse.impulse = Vec2::new(-impulse_force, 0.0);
-                        }
-
-                        continue;
                     }
                 }
             }

@@ -12,7 +12,7 @@ pub struct TutorialPhysicsPlugin;
 
 /// A Tutorial component which has
 ///  many UI's entities
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug)]
 pub struct Tutorial {
     pub ui_entities: HashSet<Entity>,
 }
@@ -120,11 +120,16 @@ fn tutorial_interaction_detection(
                     if player_query.get(*collider_b).is_ok() {
                         tutorial_active.0 = true;
                     }
-                } else if let Ok((_, mut tutorial_active, _)) = tutorials_query.get_mut(*collider_b)
-                {
+
+                    continue;
+                }
+
+                if let Ok((_, mut tutorial_active, _)) = tutorials_query.get_mut(*collider_b) {
                     if player_query.get(*collider_a).is_ok() {
                         tutorial_active.0 = true;
                     }
+
+                    continue;
                 }
             }
 
@@ -138,10 +143,12 @@ fn tutorial_interaction_detection(
 
                         // And despawn the entity itself
                         commands.entity(tutorial_entity).despawn();
+
+                        continue;
                     }
-                    // Dispawn all UI related entities into this entity
-                } else if let Ok((tutorial_entity, _, tutorial)) = tutorials_query.get(*collider_b)
-                {
+                }
+
+                if let Ok((tutorial_entity, _, tutorial)) = tutorials_query.get(*collider_b) {
                     // Check that current collider is a player collider
                     if player_query.get(*collider_a).is_ok() {
                         // Dispawn all UI related entities into this entity
@@ -151,6 +158,8 @@ fn tutorial_interaction_detection(
 
                         // And despawn the entity itself
                         commands.entity(tutorial_entity).despawn();
+
+                        continue;
                     }
                 }
             }
