@@ -43,8 +43,8 @@ fn combat_interaction_detection(
         // Now impulse by `x` axis looks so sharp. I have to understand how to make it
         //  smooth and only after that it would be possible to increase this value
         //  up to 100 or 300 depends on smoothness
-        let impulse_force_horizontal = 30.0;
-        let impulse_force_vertical = 10.0;
+        let impulse_force_horizontal = 120.0;
+        let impulse_force_vertical = 30.0;
 
         match collision {
             CollisionEvent::Started(collider_a, collider_b, _) => {

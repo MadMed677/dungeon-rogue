@@ -35,7 +35,7 @@ impl From<IntGridCell> for ColliderBundle {
     fn from(int_grid_cell: IntGridCell) -> Self {
         if int_grid_cell.value == CollisionId::Ladder as i32 {
             Self {
-                collider: Collider::cuboid(8.0, 8.0),
+                collider: Collider::cuboid(2.0, 2.0),
                 sensor: Sensor,
             }
         } else {

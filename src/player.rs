@@ -7,7 +7,7 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, Climbable, Climber, Health, IdleAnimation, MovementAnimation,
+    ApplicationState, ClimbAnimation, Climbable, Climber, Health, IdleAnimation, MovementAnimation,
     MovementDirection, OnMove, PlayerIsDeadEvent, Speed, Sprites,
 };
 
@@ -27,6 +27,22 @@ pub struct Player;
 #[derive(Component, Debug, Inspectable)]
 struct GroundDetection {
     pub on_ground: bool,
+}
+
+// #[derive(Component, Debug, PartialEq)]
+// struct PlayerAnimation(PlayerAnimationState);
+
+/// Describes animation state of the player
+#[derive(Component, Debug, Eq, PartialEq, Inspectable)]
+pub enum PlayerAnimationState {
+    /// Player does nothing
+    Idle,
+
+    /// Player run
+    Run,
+
+    /// Player climb
+    Climb,
 }
 
 #[derive(Component)]
@@ -55,13 +71,13 @@ impl Plugin for PlayerPlugin {
                 .run_in_state(ApplicationState::Game)
                 .with_system(spawn_player)
                 .with_system(player_movement)
+                .with_system(player_animation_processor)
                 .with_system(player_idle_animation)
+                .with_system(player_climb_animation)
                 .with_system(player_run_animation)
                 .with_system(player_jump)
-                .with_system(change_player_textures)
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
-                .with_system(change_player_texture)
                 .with_system(spawn_ground_sensor)
                 .with_system(ground_detection)
                 .with_system(dead)
@@ -77,7 +93,7 @@ fn spawn_player(
     player_query: Query<(Entity, &Transform), Added<Player>>,
 ) {
     if let Ok((player_entity, transform)) = player_query.get_single() {
-        let sprite_asset_info = &materials.player.apple.idle;
+        let sprite_asset_info = &materials.player.idle;
 
         let sprite_width = sprite_asset_info.width;
         let sprite_height = sprite_asset_info.height;
@@ -118,10 +134,17 @@ fn spawn_player(
             .insert(player_direction)
             .insert(IdleAnimation {
                 timer: Timer::from_seconds(0.1, true),
+                index: 0,
             })
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.1, true),
+                index: 0,
             })
+            .insert(ClimbAnimation {
+                timer: Timer::from_seconds(0.15, true),
+                index: 0,
+            })
+            .insert(PlayerAnimationState::Idle)
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -134,6 +157,57 @@ fn spawn_player(
                 max: 10,
             })
             .insert(Speed(120.0));
+    }
+}
+
+/// Handle all physical changes and update PlayerAnimationState
+/// Also set correct player material texture
+#[allow(clippy::type_complexity)]
+fn player_animation_processor(
+    mut commands: Commands,
+    materials: Res<Sprites>,
+    mut player_query: Query<
+        (
+            Entity,
+            &mut PlayerAnimationState,
+            &mut TextureAtlasSprite,
+            &OnMove,
+            &Climber,
+        ),
+        (With<Player>, Or<(Changed<OnMove>, Changed<Climber>)>),
+    >,
+) {
+    if let Ok((entity, mut animation_state, mut sprite, on_move, climber)) =
+        player_query.get_single_mut()
+    {
+        sprite.index = 0;
+
+        // Climbing has more priority than movement or idle
+        if climber.climbing {
+            *animation_state = PlayerAnimationState::Climb;
+
+            commands
+                .entity(entity)
+                .insert(materials.player.climb.texture.clone());
+
+            return;
+        }
+
+        if on_move.0 {
+            *animation_state = PlayerAnimationState::Run;
+
+            commands
+                .entity(entity)
+                .insert(materials.player.run.texture.clone());
+
+            return;
+        }
+
+        commands
+            .entity(entity)
+            .insert(materials.player.idle.texture.clone());
+
+        *animation_state = PlayerAnimationState::Idle;
     }
 }
 
@@ -195,7 +269,9 @@ fn player_movement(
 
         /* Climbing logic */
         if climber.intersaction_elements.is_empty() {
-            climber.climbing = false;
+            if climber.climbing {
+                climber.climbing = false;
+            }
         } else if keyboard.just_pressed(KeyCode::Up) || keyboard.just_pressed(KeyCode::Down) {
             climber.climbing = true;
         }
@@ -214,37 +290,6 @@ fn player_movement(
     }
 }
 
-fn change_player_textures(
-    mut commands: Commands,
-    materials: Res<Sprites>,
-    mut movement_query: Query<
-        (Entity, &mut TextureAtlasSprite, &OnMove),
-        (With<Player>, Changed<OnMove>),
-    >,
-) {
-    for _ in movement_query.iter() {
-        println!("Another tick");
-    }
-
-    if let Ok((entity, mut sprite, on_move)) = movement_query.get_single_mut() {
-        println!("Tick");
-        // If on_move is true that means that we have to
-        //  change sprite to `run`
-        // Otherwise - to `idle`
-        if on_move.0 {
-            commands
-                .entity(entity)
-                .insert(materials.player.apple.run.texture.clone());
-        } else {
-            commands
-                .entity(entity)
-                .insert(materials.player.apple.idle.texture.clone());
-        }
-
-        sprite.index = 0;
-    }
-}
-
 fn player_jump(
     keyboard: Res<Input<KeyCode>>,
     mut player_query: Query<(&mut ExternalImpulse, &mut Climber, &GroundDetection), With<Player>>,
@@ -253,7 +298,7 @@ fn player_jump(
     {
         if keyboard.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing)
         {
-            external_impulse.impulse = Vec2::new(0.0, 35.0);
+            external_impulse.impulse = Vec2::new(0.0, 65.0);
             climber.climbing = false;
         }
     }
@@ -263,31 +308,64 @@ fn player_idle_animation(
     time: Res<Time>,
     mut query: Query<
         (
-            &OnMove,
+            &PlayerAnimationState,
             &mut TextureAtlasSprite,
-            &Handle<TextureAtlas>,
             &mut IdleAnimation,
         ),
         With<Player>,
     >,
 ) {
-    for (on_move, mut sprite, texture_atlas_handle, mut idle_animation) in query.iter_mut() {
+    for (player_animation, mut sprite, mut idle_animation) in query.iter_mut() {
         // Do nothing if the player is not in idle
-        if on_move.0 {
-            return;
+        if *player_animation != PlayerAnimationState::Idle {
+            continue;
         }
 
         idle_animation.timer.tick(time.delta());
 
         if idle_animation.timer.finished() {
-            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-
-            sprite.index += 1;
+            idle_animation.index += 1;
 
             // 24 - is a maximum amount of textures for idle state
-            if sprite.index == 24 {
+            if idle_animation.index == 24 {
                 // Loop the animation
-                sprite.index = 0;
+                idle_animation.index = 0;
+            }
+
+            sprite.index = idle_animation.index;
+        }
+    }
+}
+
+fn player_climb_animation(
+    time: Res<Time>,
+    mut query: Query<
+        (
+            &PlayerAnimationState,
+            &Velocity,
+            &mut TextureAtlasSprite,
+            &mut ClimbAnimation,
+        ),
+        With<Player>,
+    >,
+) {
+    for (animation_state, velocity, mut sprite, mut climb_animation) in query.iter_mut() {
+        // Do nothing if the player is not in idle
+        if *animation_state != PlayerAnimationState::Climb {
+            continue;
+        }
+
+        climb_animation.timer.tick(time.delta());
+
+        if climb_animation.timer.finished() {
+            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            let y_velocity = velocity.linvel.y;
+
+            #[allow(clippy::manual_range_contains)]
+            if y_velocity > 20.0 || y_velocity < -20.0 {
+                climb_animation.index = (climb_animation.index + 1) % 12;
+
+                sprite.index = climb_animation.index;
             }
         }
     }
@@ -298,7 +376,7 @@ fn player_run_animation(
     time: Res<Time>,
     mut query: Query<
         (
-            &OnMove,
+            &PlayerAnimationState,
             &mut TextureAtlasSprite,
             &Handle<TextureAtlas>,
             &mut MovementAnimation,
@@ -306,24 +384,25 @@ fn player_run_animation(
         With<Player>,
     >,
 ) {
-    for (on_move, mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
-        // If the player is not on move
-        //  set the first sprite which is equal to
-        //  player default state and do nothing
-        if !on_move.0 {
-            return;
+    for (player_animation, mut sprite, texture_atlas_handle, mut movement_animation) in
+        query.iter_mut()
+    {
+        if *player_animation != PlayerAnimationState::Run {
+            continue;
         }
 
         movement_animation.timer.tick(time.delta());
 
         if movement_animation.timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index += 1;
 
-            if sprite.index == texture_atlas.textures.len() {
-                // Loop the animation
-                sprite.index = 0;
+            movement_animation.index += 1;
+
+            if movement_animation.index == texture_atlas.textures.len() {
+                movement_animation.index = 0;
             }
+
+            sprite.index = movement_animation.index;
         }
     }
 }
@@ -403,12 +482,16 @@ fn detect_climb(
                 if let Ok(mut climber) = climbers.get_mut(*collider_a) {
                     if climbables.get(*collider_b).is_ok() {
                         climber.intersaction_elements.insert(*collider_b);
+
+                        continue;
                     }
                 }
 
                 if let Ok(mut climber) = climbers.get_mut(*collider_b) {
                     if climbables.get(*collider_a).is_ok() {
                         climber.intersaction_elements.insert(*collider_a);
+
+                        continue;
                     }
                 }
             }
@@ -416,12 +499,16 @@ fn detect_climb(
                 if let Ok(mut climber) = climbers.get_mut(*collider_a) {
                     if climbables.get(*collider_b).is_ok() {
                         climber.intersaction_elements.remove(collider_b);
+
+                        continue;
                     }
                 }
 
                 if let Ok(mut climber) = climbers.get_mut(*collider_b) {
                     if climbables.get(*collider_a).is_ok() {
                         climber.intersaction_elements.remove(collider_a);
+
+                        continue;
                     }
                 }
             }
@@ -437,64 +524,6 @@ fn ignore_gravity_during_climbing(
             gravity.0 = 0.0;
         } else {
             gravity.0 = 3.0;
-        }
-    }
-}
-
-fn change_player_texture(
-    keyboard: Res<Input<KeyCode>>,
-    materials: Res<Sprites>,
-    mut player_query: Query<
-        (
-            &mut Handle<TextureAtlas>,
-            &mut TextureAtlasSprite,
-            &mut Collider,
-            &mut PlayerName,
-            &mut Transform,
-        ),
-        With<Player>,
-    >,
-) {
-    if let Ok((mut texture_atlas, mut sprite, mut collider, mut player_name, mut transform)) =
-        player_query.get_single_mut()
-    {
-        // If player want to change player texture by pressing `Q` character
-        if keyboard.just_pressed(KeyCode::Q) {
-            let sprite_asset_info = match &player_name.0 {
-                PlayerNames::Pumpkin => {
-                    player_name.0 = PlayerNames::Dragon;
-
-                    &materials.player.dragon
-                }
-                PlayerNames::Dragon => {
-                    player_name.0 = PlayerNames::Apple;
-
-                    &materials.player.apple.run
-                }
-                PlayerNames::Apple => {
-                    player_name.0 = PlayerNames::Pumpkin;
-
-                    &materials.player.pumpkin
-                }
-            };
-
-            // Change the texture
-            *texture_atlas = sprite_asset_info.texture.clone();
-
-            // Reset the animation
-            sprite.index = 0;
-
-            // Change the object bounds
-            *collider = Collider::cuboid(
-                sprite_asset_info.width / 2.0,
-                sprite_asset_info.height / 2.0,
-            );
-
-            // Push the player a little bit up
-            //  to avoid the problem when the one sprite
-            //  is less than another sprite and we may
-            //  have a collision mismatch with the ground
-            transform.translation.y += 8.0;
         }
     }
 }

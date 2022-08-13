@@ -40,11 +40,19 @@ pub struct Speed(f32);
 #[derive(Component)]
 pub struct IdleAnimation {
     timer: Timer,
+    index: usize,
+}
+
+#[derive(Component)]
+pub struct ClimbAnimation {
+    timer: Timer,
+    index: usize,
 }
 
 #[derive(Component)]
 pub struct MovementAnimation {
     timer: Timer,
+    index: usize,
 }
 
 #[derive(Component, Default, Inspectable)]
@@ -100,15 +108,10 @@ struct SpriteAssetInfo {
     texture: Handle<TextureAtlas>,
 }
 
-struct PlayerAppleStateSprites {
+struct PlayerSprites {
     idle: SpriteAssetInfo,
     run: SpriteAssetInfo,
-}
-
-struct PlayerSprites {
-    pumpkin: SpriteAssetInfo,
-    dragon: SpriteAssetInfo,
-    apple: PlayerAppleStateSprites,
+    climb: SpriteAssetInfo,
 }
 
 struct MonstersSprites {
@@ -164,26 +167,6 @@ fn setup(
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
 
-    let pumpkin_texture_width = 16.0;
-    let pumpkin_texture_height = 24.0;
-    let pumpkin_texture_handle = asset_server.load("atlas/player/pumpkin_dude_16_24.png");
-    let pumpkin_texture_atlas = TextureAtlas::from_grid(
-        pumpkin_texture_handle,
-        Vec2::new(pumpkin_texture_width, pumpkin_texture_height),
-        8,
-        1,
-    );
-
-    let dragon_texture_width = 16.0;
-    let dragon_texture_height = 22.0;
-    let dragon_texture_handle = asset_server.load("atlas/player/dragon_dude_16_22.png");
-    let dragon_texture_atlas = TextureAtlas::from_grid(
-        dragon_texture_handle,
-        Vec2::new(dragon_texture_width, dragon_texture_height),
-        9,
-        1,
-    );
-
     let apple_idle_texture_width = 34.0;
     let apple_idle_texture_height = 32.0;
     let apple_idle_texture_handle = asset_server.load("atlas/player/apple@idle-sheet.png");
@@ -195,7 +178,7 @@ fn setup(
         Vec2::new(30.0, 32.0),
     );
 
-    let apple_run_texture_width = 26.0;
+    let apple_run_texture_width = 24.0;
     let apple_run_texture_height = 34.0;
     let apple_run_texture_handle = asset_server.load("atlas/player/apple@run-sheet.png");
     let apple_run_texture_atlas = TextureAtlas::from_grid_with_padding(
@@ -203,7 +186,18 @@ fn setup(
         Vec2::new(apple_run_texture_width, apple_run_texture_height),
         10,
         1,
-        Vec2::new(38.0, 30.0),
+        Vec2::new(40.0, 30.0),
+    );
+
+    let apple_climb_texture_width = 34.0;
+    let apple_climb_texture_height = 32.0;
+    let apple_climb_texture_handle = asset_server.load("atlas/player/apple@climb-sheet_2.png");
+    let apple_climb_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_climb_texture_handle,
+        Vec2::new(apple_climb_texture_width, apple_climb_texture_height),
+        10,
+        2,
+        Vec2::new(30.0, 32.0),
     );
 
     let gray_monster_texture_width = 16.0;
@@ -232,27 +226,20 @@ fn setup(
 
     commands.insert_resource(Sprites {
         player: PlayerSprites {
-            pumpkin: SpriteAssetInfo {
-                width: pumpkin_texture_width,
-                height: pumpkin_texture_height,
-                texture: texture_atlases.add(pumpkin_texture_atlas),
+            idle: SpriteAssetInfo {
+                width: apple_idle_texture_width,
+                height: apple_idle_texture_height,
+                texture: texture_atlases.add(apple_idle_texture_atlas),
             },
-            dragon: SpriteAssetInfo {
-                width: dragon_texture_width,
-                height: dragon_texture_height,
-                texture: texture_atlases.add(dragon_texture_atlas),
+            run: SpriteAssetInfo {
+                width: apple_run_texture_width,
+                height: apple_run_texture_height,
+                texture: texture_atlases.add(apple_run_texture_atlas),
             },
-            apple: PlayerAppleStateSprites {
-                idle: SpriteAssetInfo {
-                    width: apple_idle_texture_width,
-                    height: apple_idle_texture_height,
-                    texture: texture_atlases.add(apple_idle_texture_atlas),
-                },
-                run: SpriteAssetInfo {
-                    width: apple_run_texture_width,
-                    height: apple_run_texture_height,
-                    texture: texture_atlases.add(apple_run_texture_atlas),
-                },
+            climb: SpriteAssetInfo {
+                width: apple_climb_texture_width,
+                height: apple_climb_texture_height,
+                texture: texture_atlases.add(apple_climb_texture_atlas),
             },
         },
         monsters: MonstersSprites {

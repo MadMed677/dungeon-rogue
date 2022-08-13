@@ -8,12 +8,12 @@ use crate::{PlayerSprites, Sprites};
 pub fn prepare_sprites() -> Sprites {
     Sprites {
         player: PlayerSprites {
-            pumpkin: crate::SpriteAssetInfo {
+            idle: crate::SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
-            dragon: crate::SpriteAssetInfo {
+            run: crate::SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
