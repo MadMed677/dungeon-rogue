@@ -55,6 +55,11 @@ pub struct MovementAnimation {
     index: usize,
 }
 
+#[derive(Component)]
+pub struct HurtAnimation {
+    timer: Timer,
+}
+
 #[derive(Component, Default, Inspectable)]
 /// Describes that entity on move or not
 pub struct OnMove(bool);
@@ -112,6 +117,7 @@ struct PlayerSprites {
     idle: SpriteAssetInfo,
     run: SpriteAssetInfo,
     climb: SpriteAssetInfo,
+    hurt: SpriteAssetInfo,
 }
 
 struct MonstersSprites {
@@ -159,6 +165,11 @@ pub struct ExitTheGameEvent;
 #[derive(Debug)]
 pub struct PlayerIsDeadEvent;
 
+/// Should be fire when the player get hit but not dead
+/// Accepts how many points the player receives
+#[derive(Debug)]
+pub struct PlayerIsHitEvent(i32);
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -191,13 +202,24 @@ fn setup(
 
     let apple_climb_texture_width = 34.0;
     let apple_climb_texture_height = 32.0;
-    let apple_climb_texture_handle = asset_server.load("atlas/player/apple@climb-sheet_2.png");
+    let apple_climb_texture_handle = asset_server.load("atlas/player/apple@climb-sheet.png");
     let apple_climb_texture_atlas = TextureAtlas::from_grid_with_padding(
         apple_climb_texture_handle,
         Vec2::new(apple_climb_texture_width, apple_climb_texture_height),
         10,
         2,
         Vec2::new(30.0, 32.0),
+    );
+
+    let apple_hurt_texture_width = 34.0;
+    let apple_hurt_texture_height = 32.0;
+    let apple_hurt_texture_handle = asset_server.load("atlas/player/apple@hurt-sheet.png");
+    let apple_hurt_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_hurt_texture_handle,
+        Vec2::new(apple_hurt_texture_width, apple_hurt_texture_height),
+        8,
+        1,
+        Vec2::new(30.0, 0.0),
     );
 
     let gray_monster_texture_width = 16.0;
@@ -241,6 +263,11 @@ fn setup(
                 height: apple_climb_texture_height,
                 texture: texture_atlases.add(apple_climb_texture_atlas),
             },
+            hurt: SpriteAssetInfo {
+                width: apple_hurt_texture_width,
+                height: apple_hurt_texture_height,
+                texture: texture_atlases.add(apple_hurt_texture_atlas),
+            },
         },
         monsters: MonstersSprites {
             gray: SpriteAssetInfo {
@@ -275,6 +302,7 @@ fn main() {
         .add_event::<ResumeTheGameEvent>()
         .add_event::<ExitTheGameEvent>()
         .add_event::<PlayerIsDeadEvent>()
+        .add_event::<PlayerIsHitEvent>()
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)

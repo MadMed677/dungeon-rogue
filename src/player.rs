@@ -7,8 +7,9 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, ClimbAnimation, Climbable, Climber, Health, IdleAnimation, MovementAnimation,
-    MovementDirection, OnMove, PlayerIsDeadEvent, Speed, Sprites,
+    ApplicationState, ClimbAnimation, Climbable, Climber, Health, HurtAnimation, IdleAnimation,
+    MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
+    Sprites,
 };
 
 #[derive(Debug, Inspectable)]
@@ -33,7 +34,7 @@ struct GroundDetection {
 // struct PlayerAnimation(PlayerAnimationState);
 
 /// Describes animation state of the player
-#[derive(Component, Debug, Eq, PartialEq, Inspectable)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
 pub enum PlayerAnimationState {
     /// Player does nothing
     Idle,
@@ -43,6 +44,15 @@ pub enum PlayerAnimationState {
 
     /// Player climb
     Climb,
+
+    /// Player has taken damage but didn't die
+    Hit,
+}
+
+impl Default for PlayerAnimationState {
+    fn default() -> Self {
+        Self::Idle
+    }
 }
 
 #[derive(Component)]
@@ -66,24 +76,28 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(ApplicationState::Game)
-                .with_system(spawn_player)
-                .with_system(player_movement)
-                .with_system(player_animation_processor)
-                .with_system(player_idle_animation)
-                .with_system(player_climb_animation)
-                .with_system(player_run_animation)
-                .with_system(player_jump)
-                .with_system(detect_climb)
-                .with_system(ignore_gravity_during_climbing)
-                .with_system(spawn_ground_sensor)
-                .with_system(ground_detection)
-                .with_system(dead)
-                .into(),
-        )
-        .register_ldtk_entity::<PlayerBundle>("Player");
+        app.add_loopless_state(PlayerAnimationState::Idle)
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(ApplicationState::Game)
+                    .with_system(spawn_player)
+                    .with_system(player_movement)
+                    .with_system(player_animation_processor)
+                    .with_system(player_animation_state_processor)
+                    .with_system(player_hit_animation_processor)
+                    .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
+                    .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
+                    .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
+                    .with_system(player_hurt_animation.run_in_state(PlayerAnimationState::Hit))
+                    .with_system(player_jump)
+                    .with_system(detect_climb)
+                    .with_system(ignore_gravity_during_climbing)
+                    .with_system(spawn_ground_sensor)
+                    .with_system(ground_detection)
+                    .with_system(dead)
+                    .into(),
+            )
+            .register_ldtk_entity::<PlayerBundle>("Player");
     }
 }
 
@@ -144,7 +158,9 @@ fn spawn_player(
                 timer: Timer::from_seconds(0.15, true),
                 index: 0,
             })
-            .insert(PlayerAnimationState::Idle)
+            .insert(HurtAnimation {
+                timer: Timer::from_seconds(0.1, true),
+            })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -160,54 +176,88 @@ fn spawn_player(
     }
 }
 
+fn player_hit_animation_processor(
+    mut commands: Commands,
+    materials: Res<Sprites>,
+    mut player_query: Query<(Entity, &mut TextureAtlasSprite), With<Player>>,
+    mut player_hit_event: EventReader<PlayerIsHitEvent>,
+) {
+    for _ in player_hit_event.iter() {
+        if let Ok((entity, mut sprite)) = player_query.get_single_mut() {
+            sprite.index = 0;
+
+            commands.insert_resource(NextState(PlayerAnimationState::Hit));
+
+            commands
+                .entity(entity)
+                .insert(materials.player.hurt.texture.clone());
+
+            return;
+        }
+    }
+}
+
+fn player_animation_state_processor(
+    mut commands: Commands,
+    materials: Res<Sprites>,
+    animation_state: Res<CurrentState<PlayerAnimationState>>,
+    mut player_query: Query<(Entity, &mut TextureAtlasSprite), With<Player>>,
+) {
+    if animation_state.is_changed() {
+        if let Ok((entity, mut sprite)) = player_query.get_single_mut() {
+            sprite.index = 0;
+
+            match animation_state.0 {
+                PlayerAnimationState::Idle => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.idle.texture.clone());
+                }
+                PlayerAnimationState::Run => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.run.texture.clone());
+                }
+                PlayerAnimationState::Climb => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.climb.texture.clone());
+                }
+                PlayerAnimationState::Hit => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.hurt.texture.clone());
+                }
+            }
+        }
+    }
+}
+
 /// Handle all physical changes and update PlayerAnimationState
 /// Also set correct player material texture
 #[allow(clippy::type_complexity)]
 fn player_animation_processor(
     mut commands: Commands,
-    materials: Res<Sprites>,
     mut player_query: Query<
-        (
-            Entity,
-            &mut PlayerAnimationState,
-            &mut TextureAtlasSprite,
-            &OnMove,
-            &Climber,
-        ),
+        (&OnMove, &Climber),
         (With<Player>, Or<(Changed<OnMove>, Changed<Climber>)>),
     >,
 ) {
-    if let Ok((entity, mut animation_state, mut sprite, on_move, climber)) =
-        player_query.get_single_mut()
-    {
-        sprite.index = 0;
-
+    if let Ok((on_move, climber)) = player_query.get_single_mut() {
         // Climbing has more priority than movement or idle
         if climber.climbing {
-            *animation_state = PlayerAnimationState::Climb;
-
-            commands
-                .entity(entity)
-                .insert(materials.player.climb.texture.clone());
+            commands.insert_resource(NextState(PlayerAnimationState::Climb));
 
             return;
         }
 
         if on_move.0 {
-            *animation_state = PlayerAnimationState::Run;
-
-            commands
-                .entity(entity)
-                .insert(materials.player.run.texture.clone());
+            commands.insert_resource(NextState(PlayerAnimationState::Run));
 
             return;
         }
 
-        commands
-            .entity(entity)
-            .insert(materials.player.idle.texture.clone());
-
-        *animation_state = PlayerAnimationState::Idle;
+        commands.insert_resource(NextState(PlayerAnimationState::Idle));
     }
 }
 
@@ -306,55 +356,30 @@ fn player_jump(
 
 fn player_idle_animation(
     time: Res<Time>,
-    mut query: Query<
-        (
-            &PlayerAnimationState,
-            &mut TextureAtlasSprite,
-            &mut IdleAnimation,
-        ),
-        With<Player>,
-    >,
+    mut query: Query<(&mut TextureAtlasSprite, &mut IdleAnimation), With<Player>>,
 ) {
-    for (player_animation, mut sprite, mut idle_animation) in query.iter_mut() {
+    for (mut sprite, mut idle_animation) in query.iter_mut() {
         // Do nothing if the player is not in idle
-        if *player_animation != PlayerAnimationState::Idle {
-            continue;
-        }
 
         idle_animation.timer.tick(time.delta());
 
         if idle_animation.timer.finished() {
-            idle_animation.index += 1;
+            sprite.index += 1;
 
             // 24 - is a maximum amount of textures for idle state
-            if idle_animation.index == 24 {
+            if sprite.index >= 24 {
                 // Loop the animation
-                idle_animation.index = 0;
+                sprite.index = 0;
             }
-
-            sprite.index = idle_animation.index;
         }
     }
 }
 
 fn player_climb_animation(
     time: Res<Time>,
-    mut query: Query<
-        (
-            &PlayerAnimationState,
-            &Velocity,
-            &mut TextureAtlasSprite,
-            &mut ClimbAnimation,
-        ),
-        With<Player>,
-    >,
+    mut query: Query<(&Velocity, &mut TextureAtlasSprite, &mut ClimbAnimation), With<Player>>,
 ) {
-    for (animation_state, velocity, mut sprite, mut climb_animation) in query.iter_mut() {
-        // Do nothing if the player is not in idle
-        if *animation_state != PlayerAnimationState::Climb {
-            continue;
-        }
-
+    for (velocity, mut sprite, mut climb_animation) in query.iter_mut() {
         climb_animation.timer.tick(time.delta());
 
         if climb_animation.timer.finished() {
@@ -376,7 +401,6 @@ fn player_run_animation(
     time: Res<Time>,
     mut query: Query<
         (
-            &PlayerAnimationState,
             &mut TextureAtlasSprite,
             &Handle<TextureAtlas>,
             &mut MovementAnimation,
@@ -384,13 +408,7 @@ fn player_run_animation(
         With<Player>,
     >,
 ) {
-    for (player_animation, mut sprite, texture_atlas_handle, mut movement_animation) in
-        query.iter_mut()
-    {
-        if *player_animation != PlayerAnimationState::Run {
-            continue;
-        }
-
+    for (mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
         movement_animation.timer.tick(time.delta());
 
         if movement_animation.timer.finished() {
@@ -398,11 +416,41 @@ fn player_run_animation(
 
             movement_animation.index += 1;
 
-            if movement_animation.index == texture_atlas.textures.len() {
+            if movement_animation.index >= texture_atlas.textures.len() {
                 movement_animation.index = 0;
             }
 
             sprite.index = movement_animation.index;
+        }
+    }
+}
+
+fn player_hurt_animation(
+    mut commands: Commands,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    time: Res<Time>,
+    mut query: Query<
+        (
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+            &mut HurtAnimation,
+        ),
+        With<Player>,
+    >,
+) {
+    for (mut sprite, texture_atlas_handle, mut hurt_animation) in query.iter_mut() {
+        hurt_animation.timer.tick(time.delta());
+
+        if hurt_animation.timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+
+            sprite.index += 1;
+
+            if sprite.index >= texture_atlas.textures.len() {
+                // We should stop the animation and give back the control
+                sprite.index = 0;
+                commands.insert_resource(NextState(PlayerAnimationState::Idle));
+            }
         }
     }
 }
@@ -429,7 +477,6 @@ fn spawn_ground_sensor(
                     //  otherwise it will affect the user but we want to make it
                     //  just as trigger for ground detection reaction
                     .insert(ColliderMassProperties::Density(0.0))
-                    // .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(GroundSensor {
                         ground_detection_entity: entity,
                         intersecting_ground_entities: HashSet::new(),
