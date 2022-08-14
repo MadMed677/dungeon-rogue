@@ -18,6 +18,21 @@ pub fn prepare_sprites() -> Sprites {
                 height: 10.0,
                 texture: Handle::default(),
             },
+            climb: crate::SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                texture: Handle::default(),
+            },
+            hurt: crate::SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                texture: Handle::default(),
+            },
+            death: crate::SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                texture: Handle::default(),
+            },
         },
         monsters: crate::MonstersSprites {
             gray: crate::SpriteAssetInfo {

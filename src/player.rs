@@ -170,9 +170,6 @@ fn spawn_player(
             .insert(HurtAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
-            .insert(DeathAnimation {
-                timer: Timer::from_seconds(0.1, true),
-            })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -202,10 +199,11 @@ fn player_animation_state_processor(
     mut commands: Commands,
     materials: Res<Sprites>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
-    mut player_query: Query<(Entity, &mut TextureAtlasSprite), With<Player>>,
+    mut player_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Player>>,
+    death_animation_query: Query<Entity, With<DeathAnimation>>,
 ) {
     if animation_state.is_changed() {
-        if let Ok((entity, mut sprite)) = player_query.get_single_mut() {
+        if let Ok((entity, transform, mut sprite)) = player_query.get_single_mut() {
             sprite.index = 0;
 
             match animation_state.0 {
@@ -236,18 +234,40 @@ fn player_animation_state_processor(
                 },
                 PlayerAnimationState::Death(death_animation) => match death_animation {
                     PlayerProcessAnimation::Start => {
+                        // Spawn player death animation
                         commands
-                            .entity(entity)
-                            .insert(materials.player.death.texture.clone())
-                            // Make the player as PositionBased to avoid any physics above it
-                            .insert(RigidBody::KinematicPositionBased);
-                    }
-                    PlayerProcessAnimation::End => {
-                        // We should trigger the end game event
-                        // commands.insert_resource(NextState(PlayerAnimationState::Idle));
+                            .spawn_bundle(SpriteSheetBundle {
+                                texture_atlas: materials.player.death.texture.clone(),
+                                transform: *transform,
+                                sprite: TextureAtlasSprite {
+                                    flip_x: sprite.flip_x,
+                                    ..Default::default()
+                                },
+                                ..Default::default()
+                            })
+                            .insert(DeathAnimation {
+                                timer: Timer::from_seconds(0.1, true),
+                            });
+
+                        // Remove the player from the scene
                         commands.entity(entity).despawn_recursive();
                     }
+                    PlayerProcessAnimation::End => {
+                        unreachable!();
+                    }
                 },
+            }
+
+            return;
+        }
+
+        // This match should be only when the Player is destroyed
+        // This is happening only when the Player is dead and
+        //  we removed it from the scene
+        if animation_state.0 == PlayerAnimationState::Death(PlayerProcessAnimation::End) {
+            // We should remove useless sprite
+            if let Ok(death_sprite_entity) = death_animation_query.get_single() {
+                commands.entity(death_sprite_entity).despawn();
             }
         }
     }
@@ -510,9 +530,13 @@ fn player_hurt_animation(
 fn player_death_animation(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut DeathAnimation), With<Player>>,
+    mut query: Query<(
+        &mut TextureAtlasSprite,
+        &mut DeathAnimation,
+        &mut Visibility,
+    )>,
 ) {
-    for (mut sprite, mut death_animation) in query.iter_mut() {
+    for (mut sprite, mut death_animation, mut visibility) in query.iter_mut() {
         death_animation.timer.tick(time.delta());
 
         if death_animation.timer.finished() {
@@ -527,6 +551,9 @@ fn player_death_animation(
                 commands.insert_resource(NextState(PlayerAnimationState::Death(
                     PlayerProcessAnimation::End,
                 )));
+
+                // Hide the entity until remove it from the scene
+                visibility.is_visible = false;
             }
         }
     }
