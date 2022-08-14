@@ -249,10 +249,7 @@ fn player_animation_state_processor(
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
-    mut player_query: Query<
-        (&OnMove, &Climber),
-        (With<Player>, Or<(Changed<OnMove>, Changed<Climber>)>),
-    >,
+    mut player_query: Query<(&OnMove, &Climber), With<Player>>,
 ) {
     if let Ok((on_move, climber)) = player_query.get_single_mut() {
         // Forbid the animation until player finish the animation
