@@ -30,8 +30,17 @@ struct GroundDetection {
     pub on_ground: bool,
 }
 
-// #[derive(Component, Debug, PartialEq)]
-// struct PlayerAnimation(PlayerAnimationState);
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
+pub enum PlayerHitAnimation {
+    Start,
+    End,
+}
+
+impl Default for PlayerHitAnimation {
+    fn default() -> Self {
+        Self::Start
+    }
+}
 
 /// Describes animation state of the player
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
@@ -46,7 +55,7 @@ pub enum PlayerAnimationState {
     Climb,
 
     /// Player has taken damage but didn't die
-    Hit,
+    Hit(PlayerHitAnimation),
 }
 
 impl Default for PlayerAnimationState {
@@ -84,11 +93,13 @@ impl Plugin for PlayerPlugin {
                     .with_system(player_movement)
                     .with_system(player_animation_processor)
                     .with_system(player_animation_state_processor)
-                    .with_system(player_hit_animation_processor)
                     .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
                     .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
                     .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
-                    .with_system(player_hurt_animation.run_in_state(PlayerAnimationState::Hit))
+                    .with_system(
+                        player_hurt_animation
+                            .run_in_state(PlayerAnimationState::Hit(PlayerHitAnimation::Start)),
+                    )
                     .with_system(player_jump)
                     .with_system(detect_climb)
                     .with_system(ignore_gravity_during_climbing)
@@ -176,33 +187,28 @@ fn spawn_player(
     }
 }
 
-fn player_hit_animation_processor(
-    mut commands: Commands,
-    materials: Res<Sprites>,
-    mut player_query: Query<(Entity, &mut TextureAtlasSprite), With<Player>>,
-    mut player_hit_event: EventReader<PlayerIsHitEvent>,
-) {
-    for _ in player_hit_event.iter() {
-        if let Ok((entity, mut sprite)) = player_query.get_single_mut() {
-            sprite.index = 0;
-
-            commands.insert_resource(NextState(PlayerAnimationState::Hit));
-
-            commands
-                .entity(entity)
-                .insert(materials.player.hurt.texture.clone());
-
-            return;
-        }
-    }
-}
-
+/// Triggers when `animation_state` has changed and update user texture
 fn player_animation_state_processor(
     mut commands: Commands,
     materials: Res<Sprites>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut player_query: Query<(Entity, &mut TextureAtlasSprite), With<Player>>,
+    mut player_hit_event: EventReader<PlayerIsHitEvent>,
 ) {
+    // If we receive `Hit` event we have to change the state
+    //  which will call `player_animation_state_processor` method again
+    //  but will goes to the `if animation_state.is_changed()` check
+    //  and update the texture and reset the sprite index
+    for _ in player_hit_event.iter() {
+        if player_query.get_single().is_ok() {
+            commands.insert_resource(NextState(PlayerAnimationState::Hit(
+                PlayerHitAnimation::Start,
+            )));
+
+            return;
+        }
+    }
+
     if animation_state.is_changed() {
         if let Ok((entity, mut sprite)) = player_query.get_single_mut() {
             sprite.index = 0;
@@ -223,20 +229,25 @@ fn player_animation_state_processor(
                         .entity(entity)
                         .insert(materials.player.climb.texture.clone());
                 }
-                PlayerAnimationState::Hit => {
-                    commands
-                        .entity(entity)
-                        .insert(materials.player.hurt.texture.clone());
-                }
+                PlayerAnimationState::Hit(hit_animation) => match hit_animation {
+                    PlayerHitAnimation::Start => {
+                        commands
+                            .entity(entity)
+                            .insert(materials.player.hurt.texture.clone());
+                    }
+                    PlayerHitAnimation::End => {
+                        commands.insert_resource(NextState(PlayerAnimationState::Idle));
+                    }
+                },
             }
         }
     }
 }
 
-/// Handle all physical changes and update PlayerAnimationState
-/// Also set correct player material texture
+/// Handle all physical changes and set correct player material texture
 #[allow(clippy::type_complexity)]
 fn player_animation_processor(
+    player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
     mut player_query: Query<
         (&OnMove, &Climber),
@@ -244,20 +255,31 @@ fn player_animation_processor(
     >,
 ) {
     if let Ok((on_move, climber)) = player_query.get_single_mut() {
+        // Forbid the animation until player finish the animation
+        if player_animation_state.0 == PlayerAnimationState::Hit(PlayerHitAnimation::Start) {
+            return;
+        }
+
         // Climbing has more priority than movement or idle
         if climber.climbing {
-            commands.insert_resource(NextState(PlayerAnimationState::Climb));
+            if player_animation_state.0 != PlayerAnimationState::Climb {
+                commands.insert_resource(NextState(PlayerAnimationState::Climb));
+            }
 
             return;
         }
 
         if on_move.0 {
-            commands.insert_resource(NextState(PlayerAnimationState::Run));
+            if player_animation_state.0 != PlayerAnimationState::Run {
+                commands.insert_resource(NextState(PlayerAnimationState::Run));
+            }
 
             return;
         }
 
-        commands.insert_resource(NextState(PlayerAnimationState::Idle));
+        if player_animation_state.0 != PlayerAnimationState::Idle {
+            commands.insert_resource(NextState(PlayerAnimationState::Idle));
+        }
     }
 }
 
@@ -449,7 +471,10 @@ fn player_hurt_animation(
             if sprite.index >= texture_atlas.textures.len() {
                 // We should stop the animation and give back the control
                 sprite.index = 0;
-                commands.insert_resource(NextState(PlayerAnimationState::Idle));
+
+                commands.insert_resource(NextState(PlayerAnimationState::Hit(
+                    PlayerHitAnimation::End,
+                )));
             }
         }
     }
