@@ -7,9 +7,9 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, ClimbAnimation, Climbable, Climber, Health, HurtAnimation, IdleAnimation,
-    MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
-    Sprites,
+    ApplicationState, ClimbAnimation, Climbable, Climber, DeathAnimation, Health, HurtAnimation,
+    IdleAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
+    PlayerIsHitEvent, Speed, Sprites,
 };
 
 #[derive(Debug, Inspectable)]
@@ -30,20 +30,14 @@ struct GroundDetection {
     pub on_ground: bool,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
-pub enum PlayerHitAnimation {
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum PlayerProcessAnimation {
     Start,
     End,
 }
 
-impl Default for PlayerHitAnimation {
-    fn default() -> Self {
-        Self::Start
-    }
-}
-
 /// Describes animation state of the player
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum PlayerAnimationState {
     /// Player does nothing
     Idle,
@@ -55,13 +49,10 @@ pub enum PlayerAnimationState {
     Climb,
 
     /// Player has taken damage but didn't die
-    Hit(PlayerHitAnimation),
-}
+    Hit(PlayerProcessAnimation),
 
-impl Default for PlayerAnimationState {
-    fn default() -> Self {
-        Self::Idle
-    }
+    /// Player died
+    Death(PlayerProcessAnimation),
 }
 
 #[derive(Component)]
@@ -85,30 +76,38 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(PlayerAnimationState::Idle)
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(ApplicationState::Game)
-                    .with_system(spawn_player)
-                    .with_system(player_movement)
-                    .with_system(player_animation_processor)
-                    .with_system(player_animation_state_processor)
-                    .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
-                    .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
-                    .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
-                    .with_system(
-                        player_hurt_animation
-                            .run_in_state(PlayerAnimationState::Hit(PlayerHitAnimation::Start)),
-                    )
-                    .with_system(player_jump)
-                    .with_system(detect_climb)
-                    .with_system(ignore_gravity_during_climbing)
-                    .with_system(spawn_ground_sensor)
-                    .with_system(ground_detection)
-                    .with_system(dead)
-                    .into(),
-            )
-            .register_ldtk_entity::<PlayerBundle>("Player");
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(ApplicationState::Game)
+                .with_system(spawn_player)
+                .with_system(player_movement)
+                .with_system(
+                    player_animation_processor.run_not_in_state(PlayerAnimationState::Death(
+                        PlayerProcessAnimation::Start,
+                    )),
+                )
+                .with_system(player_animation_state_processor)
+                .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
+                .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
+                .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
+                .with_system(
+                    player_hurt_animation
+                        .run_in_state(PlayerAnimationState::Hit(PlayerProcessAnimation::Start)),
+                )
+                .with_system(
+                    player_death_animation
+                        .run_in_state(PlayerAnimationState::Death(PlayerProcessAnimation::Start)),
+                )
+                .with_system(player_jump)
+                .with_system(detect_climb)
+                .with_system(ignore_gravity_during_climbing)
+                .with_system(spawn_ground_sensor)
+                .with_system(ground_detection)
+                .with_system(test_death_animation)
+                .with_system(dead)
+                .into(),
+        )
+        .register_ldtk_entity::<PlayerBundle>("Player");
     }
 }
 
@@ -159,7 +158,6 @@ fn spawn_player(
             .insert(player_direction)
             .insert(IdleAnimation {
                 timer: Timer::from_seconds(0.1, true),
-                index: 0,
             })
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.1, true),
@@ -172,6 +170,9 @@ fn spawn_player(
             .insert(HurtAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
+            .insert(DeathAnimation {
+                timer: Timer::from_seconds(0.1, true),
+            })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -180,10 +181,19 @@ fn spawn_player(
             })
             .insert(GroundDetection { on_ground: false })
             .insert(Health {
-                current: 10,
+                current: 2,
                 max: 10,
             })
             .insert(Speed(120.0));
+    }
+}
+
+fn test_death_animation(
+    keyboard: Res<Input<KeyCode>>,
+    mut player_death_event: EventWriter<PlayerIsDeadEvent>,
+) {
+    if keyboard.just_pressed(KeyCode::D) {
+        player_death_event.send(PlayerIsDeadEvent);
     }
 }
 
@@ -193,22 +203,7 @@ fn player_animation_state_processor(
     materials: Res<Sprites>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut player_query: Query<(Entity, &mut TextureAtlasSprite), With<Player>>,
-    mut player_hit_event: EventReader<PlayerIsHitEvent>,
 ) {
-    // If we receive `Hit` event we have to change the state
-    //  which will call `player_animation_state_processor` method again
-    //  but will goes to the `if animation_state.is_changed()` check
-    //  and update the texture and reset the sprite index
-    for _ in player_hit_event.iter() {
-        if player_query.get_single().is_ok() {
-            commands.insert_resource(NextState(PlayerAnimationState::Hit(
-                PlayerHitAnimation::Start,
-            )));
-
-            return;
-        }
-    }
-
     if animation_state.is_changed() {
         if let Ok((entity, mut sprite)) = player_query.get_single_mut() {
             sprite.index = 0;
@@ -230,13 +225,27 @@ fn player_animation_state_processor(
                         .insert(materials.player.climb.texture.clone());
                 }
                 PlayerAnimationState::Hit(hit_animation) => match hit_animation {
-                    PlayerHitAnimation::Start => {
+                    PlayerProcessAnimation::Start => {
                         commands
                             .entity(entity)
                             .insert(materials.player.hurt.texture.clone());
                     }
-                    PlayerHitAnimation::End => {
+                    PlayerProcessAnimation::End => {
                         commands.insert_resource(NextState(PlayerAnimationState::Idle));
+                    }
+                },
+                PlayerAnimationState::Death(death_animation) => match death_animation {
+                    PlayerProcessAnimation::Start => {
+                        commands
+                            .entity(entity)
+                            .insert(materials.player.death.texture.clone())
+                            // Make the player as PositionBased to avoid any physics above it
+                            .insert(RigidBody::KinematicPositionBased);
+                    }
+                    PlayerProcessAnimation::End => {
+                        // We should trigger the end game event
+                        // commands.insert_resource(NextState(PlayerAnimationState::Idle));
+                        commands.entity(entity).despawn_recursive();
                     }
                 },
             }
@@ -250,10 +259,31 @@ fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
     mut player_query: Query<(&OnMove, &Climber), With<Player>>,
+    mut player_hit_event: EventReader<PlayerIsHitEvent>,
+    mut player_death_event: EventReader<PlayerIsDeadEvent>,
 ) {
     if let Ok((on_move, climber)) = player_query.get_single_mut() {
-        // Forbid the animation until player finish the animation
-        if player_animation_state.0 == PlayerAnimationState::Hit(PlayerHitAnimation::Start) {
+        if player_death_event.iter().next().is_some() {
+            commands.insert_resource(NextState(PlayerAnimationState::Death(
+                PlayerProcessAnimation::Start,
+            )));
+
+            return;
+        }
+
+        if player_hit_event.iter().next().is_some() {
+            commands.insert_resource(NextState(PlayerAnimationState::Hit(
+                PlayerProcessAnimation::Start,
+            )));
+
+            return;
+        }
+
+        // Forbid the next animation until player finish the current one
+        if player_animation_state.0 == PlayerAnimationState::Hit(PlayerProcessAnimation::Start)
+            || player_animation_state.0
+                == PlayerAnimationState::Death(PlayerProcessAnimation::Start)
+        {
             return;
         }
 
@@ -470,7 +500,32 @@ fn player_hurt_animation(
                 sprite.index = 0;
 
                 commands.insert_resource(NextState(PlayerAnimationState::Hit(
-                    PlayerHitAnimation::End,
+                    PlayerProcessAnimation::End,
+                )));
+            }
+        }
+    }
+}
+
+fn player_death_animation(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut DeathAnimation), With<Player>>,
+) {
+    for (mut sprite, mut death_animation) in query.iter_mut() {
+        death_animation.timer.tick(time.delta());
+
+        if death_animation.timer.finished() {
+            sprite.index += 1;
+
+            // Send death state of 1 frome earlier to be able to remove the user
+            //  and avoid the idle state
+            if sprite.index >= 36 {
+                // We should stop the animation and give back the control
+                sprite.index = 0;
+
+                commands.insert_resource(NextState(PlayerAnimationState::Death(
+                    PlayerProcessAnimation::End,
                 )));
             }
         }

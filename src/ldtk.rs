@@ -4,7 +4,8 @@ use bevy_rapier2d::plugin::RapierConfiguration;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, ApplicationStateMenu, ExitTheGameEvent, PauseTheGameEvent, PlayerIsDeadEvent,
+    player::{PlayerAnimationState, PlayerProcessAnimation},
+    ApplicationState, ApplicationStateMenu, ExitTheGameEvent, PauseTheGameEvent,
     ResumeTheGameEvent,
 };
 
@@ -22,7 +23,11 @@ impl Plugin for GameLdtkPlugin {
             })
             .add_startup_system(setup)
             .add_system(keyboard_state_changer)
-            .add_system(change_game_state);
+            .add_system(change_game_state)
+            .add_enter_system(
+                PlayerAnimationState::Death(PlayerProcessAnimation::End),
+                show_dead_menu,
+            );
     }
 }
 
@@ -53,12 +58,20 @@ fn keyboard_state_changer(
     }
 }
 
+fn show_dead_menu(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+    commands.insert_resource(NextState(ApplicationState::Menu(
+        ApplicationStateMenu::Dead,
+    )));
+
+    // Turn off the physics when we pause the game
+    rapier_config.physics_pipeline_active = false;
+}
+
 // Allow too many arguments for specific function
 #[allow(clippy::too_many_arguments)]
 fn change_game_state(
     mut commands: Commands,
     mut pause_game_event: EventReader<PauseTheGameEvent>,
-    mut player_is_dead: EventReader<PlayerIsDeadEvent>,
     mut resume_game_event: EventReader<ResumeTheGameEvent>,
     mut exit_game_event: EventReader<ExitTheGameEvent>,
     mut rapier_config: ResMut<RapierConfiguration>,
@@ -74,14 +87,14 @@ fn change_game_state(
         rapier_config.physics_pipeline_active = false;
     }
 
-    for _ in player_is_dead.iter() {
-        commands.insert_resource(NextState(ApplicationState::Menu(
-            ApplicationStateMenu::Dead,
-        )));
+    // for _ in player_is_dead.iter() {
+    //     commands.insert_resource(NextState(ApplicationState::Menu(
+    //         ApplicationStateMenu::Dead,
+    //     )));
 
-        // Turn off the physics when we pause the game
-        rapier_config.physics_pipeline_active = false;
-    }
+    //     // Turn off the physics when we pause the game
+    //     rapier_config.physics_pipeline_active = false;
+    // }
 
     for _ in resume_game_event.iter() {
         // Forbid to resume the game if the player in a `Dead` menu

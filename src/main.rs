@@ -30,7 +30,7 @@ use ldtk::GameLdtkPlugin;
 use map::MapPlugin;
 use out_of_bounce::OutOfBouncePlugin;
 use physics::PhysicsPlugin;
-use player::PlayerPlugin;
+use player::{PlayerAnimationState, PlayerPlugin};
 use settings::SettingsPlugin;
 use ui::UIPlugin;
 
@@ -40,7 +40,6 @@ pub struct Speed(f32);
 #[derive(Component)]
 pub struct IdleAnimation {
     timer: Timer,
-    index: usize,
 }
 
 #[derive(Component)]
@@ -57,6 +56,11 @@ pub struct MovementAnimation {
 
 #[derive(Component)]
 pub struct HurtAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
+pub struct DeathAnimation {
     timer: Timer,
 }
 
@@ -118,6 +122,7 @@ struct PlayerSprites {
     run: SpriteAssetInfo,
     climb: SpriteAssetInfo,
     hurt: SpriteAssetInfo,
+    death: SpriteAssetInfo,
 }
 
 struct MonstersSprites {
@@ -222,6 +227,17 @@ fn setup(
         Vec2::new(30.0, 0.0),
     );
 
+    let apple_death_texture_width = 42.0;
+    let apple_death_texture_height = 42.0;
+    let apple_death_texture_handle = asset_server.load("atlas/player/apple@death-sheet_2.png");
+    let apple_death_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_death_texture_handle,
+        Vec2::new(apple_death_texture_width, apple_death_texture_height),
+        10,
+        4,
+        Vec2::new(22.0, 20.0),
+    );
+
     let gray_monster_texture_width = 16.0;
     let gray_monster_texture_height = 16.0;
     let gray_monster_texture_handle = asset_server.load("atlas/enemies/gray_monster.png");
@@ -268,6 +284,11 @@ fn setup(
                 height: apple_hurt_texture_height,
                 texture: texture_atlases.add(apple_hurt_texture_atlas),
             },
+            death: SpriteAssetInfo {
+                width: apple_death_texture_width,
+                height: apple_death_texture_height,
+                texture: texture_atlases.add(apple_death_texture_atlas),
+            },
         },
         monsters: MonstersSprites {
             gray: SpriteAssetInfo {
@@ -298,6 +319,7 @@ fn main() {
             ..Default::default()
         })
         .add_loopless_state(ApplicationState::Menu(ApplicationStateMenu::Main))
+        .add_loopless_state(PlayerAnimationState::Idle)
         .add_event::<PauseTheGameEvent>()
         .add_event::<ResumeTheGameEvent>()
         .add_event::<ExitTheGameEvent>()
