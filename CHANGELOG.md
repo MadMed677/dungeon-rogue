@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.10] - 2022-08-15
+| Animation | Animation name |
+| ------------------ | ------------ |
+| ![0_1_10_climb](./docs/0_1_10_climb.gif) | Climbing |
+| ![0_1_10_death_by_hit](./docs/0_1_10_death_by_hit.gif) | Death by enemy hit |
+| ![0_1_10_death_out_of_bounce](./docs/0_1_10_death_out_of_bounce.gif) | Death by out-of-bounce |
+
+### Added
+- Add idle, climb, hit, death animation for the player
+- Add `PlayerAnimationState` which says in which animation state the player right now.
+It helps to run the logic only on specific animation states and wait before
+we may start new physics actions.
+
+### Changed
+- Chang Player texture to the apple from [Phil Giarrusso on itch.io](https://rephil.itch.io/green-greens-forest-pixel-art-platformer-asset-pack)
+- Show death menu only when the death player animation is over
+
+### Removed
+- Remove pumpkin and dragon icons
+- Remove changing the character by pressing `Q` key
+
+---
+
 ## [0.1.9] - 2022-08-10
 
 ### Added
@@ -12,7 +35,7 @@
 Tutorial should be turned on when the game will be upgraded to `bevy@0.8` version
 
 ## [0.1.8] - 2022-08-08
-![0.1.8](./docs/dungeon_rogue_0_1_8.gif)
+![0.1.8](./docs/0_1_8.gif)
 
 ### Added
 - Add damage to the enemy when the player interacts with them.
@@ -31,7 +54,7 @@ additional UI plugins later and it will not affect main file.
 ## [0.1.7] - 2022-07-24
 | Out-of bounce dead | Enemy damage |
 | ------------------ | ------------ |
-| ![0.1.7_1](./docs/dungeon_rogue_0_1_7_1.gif) | ![0.1.7_2](./docs/dungeon_rogue_0_1_7_2.gif) |
+| ![0.1.7_1](./docs/0_1_7_1.gif) | ![0.1.7_2](./docs/0_1_7_2.gif) |
 
 ### Added
 - Add background game music when the player is playing the game. And paused it when the player is in menu.
@@ -50,7 +73,7 @@ additional UI plugins later and it will not affect main file.
 ---
 
 ## [0.1.6] - 2022-07-12
-![0.1.6](./docs/dungeon_rogue_0_1_6.gif)
+![0.1.6](./docs/0_1_6.gif)
 
 ### Added
 - Add enemy sprites and make them look like a monsters
@@ -90,7 +113,7 @@ I'll try to play with it and fix it in the next release.
 ---
 
 ## [0.1.3] - 2022-06-06
-![0.1.3](./docs/dungeon_rogue_0_1_3.gif)
+![0.1.3](./docs/0_1_3.gif)
 
 ### Added
 - Add Main Menu to pause and resume the game. For now it may only pause and resume the game. But every button just resume the game and now it's more fake.
@@ -99,7 +122,7 @@ I'll try to play with it and fix it in the next release.
 ---
 
 ## [0.1.2] - 2022-06-02
-![0.1.2](./docs/dungeon_rogue_0_1_2.gif)
+![0.1.2](./docs/0_1_2.gif)
 
 ### Added
 - [debug] Debug layer now might be run via command `cargo run --features bevy/dynamic --features debug` which enables debug layer on the top of current ones and visualize all the collisions on the screen.
@@ -123,7 +146,7 @@ Hopefully, now everything works fine.
 ---
 
 ## [0.1.0]
-![0.1.0](./docs/dungeon_rogue_0_1_0.gif)
+![0.1.0](./docs/0_1_0.gif)
 
 ### Initial version which provides:
 - Spawn the player and the map with collisions

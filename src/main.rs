@@ -30,7 +30,7 @@ use ldtk::GameLdtkPlugin;
 use map::MapPlugin;
 use out_of_bounce::OutOfBouncePlugin;
 use physics::PhysicsPlugin;
-use player::PlayerPlugin;
+use player::{PlayerAnimationState, PlayerPlugin};
 use settings::SettingsPlugin;
 use ui::UIPlugin;
 
@@ -38,7 +38,29 @@ use ui::UIPlugin;
 pub struct Speed(f32);
 
 #[derive(Component)]
+pub struct IdleAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
+pub struct ClimbAnimation {
+    timer: Timer,
+    index: usize,
+}
+
+#[derive(Component)]
 pub struct MovementAnimation {
+    timer: Timer,
+    index: usize,
+}
+
+#[derive(Component)]
+pub struct HurtAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
+pub struct DeathAnimation {
     timer: Timer,
 }
 
@@ -96,8 +118,11 @@ struct SpriteAssetInfo {
 }
 
 struct PlayerSprites {
-    pumpkin: SpriteAssetInfo,
-    dragon: SpriteAssetInfo,
+    idle: SpriteAssetInfo,
+    run: SpriteAssetInfo,
+    climb: SpriteAssetInfo,
+    hurt: SpriteAssetInfo,
+    death: SpriteAssetInfo,
 }
 
 struct MonstersSprites {
@@ -145,6 +170,11 @@ pub struct ExitTheGameEvent;
 #[derive(Debug)]
 pub struct PlayerIsDeadEvent;
 
+/// Should be fire when the player get hit but not dead
+/// Accepts how many points the player receives
+#[derive(Debug)]
+pub struct PlayerIsHitEvent(i32);
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -153,24 +183,59 @@ fn setup(
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
 
-    let pumpkin_texture_width = 16.0;
-    let pumpkin_texture_height = 24.0;
-    let pumpkin_texture_handle = asset_server.load("atlas/player/pumpkin_dude_16_24.png");
-    let pumpkin_texture_atlas = TextureAtlas::from_grid(
-        pumpkin_texture_handle,
-        Vec2::new(pumpkin_texture_width, pumpkin_texture_height),
-        8,
-        1,
+    let apple_idle_texture_width = 34.0;
+    let apple_idle_texture_height = 32.0;
+    let apple_idle_texture_handle = asset_server.load("atlas/player/apple@idle-sheet.png");
+    let apple_idle_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_idle_texture_handle,
+        Vec2::new(apple_idle_texture_width, apple_idle_texture_height),
+        10,
+        3,
+        Vec2::new(30.0, 32.0),
     );
 
-    let dragon_texture_width = 16.0;
-    let dragon_texture_height = 22.0;
-    let dragon_texture_handle = asset_server.load("atlas/player/dragon_dude_16_22.png");
-    let dragon_texture_atlas = TextureAtlas::from_grid(
-        dragon_texture_handle,
-        Vec2::new(dragon_texture_width, dragon_texture_height),
-        9,
+    let apple_run_texture_width = 24.0;
+    let apple_run_texture_height = 34.0;
+    let apple_run_texture_handle = asset_server.load("atlas/player/apple@run-sheet.png");
+    let apple_run_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_run_texture_handle,
+        Vec2::new(apple_run_texture_width, apple_run_texture_height),
+        10,
         1,
+        Vec2::new(40.0, 30.0),
+    );
+
+    let apple_climb_texture_width = 34.0;
+    let apple_climb_texture_height = 32.0;
+    let apple_climb_texture_handle = asset_server.load("atlas/player/apple@climb-sheet.png");
+    let apple_climb_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_climb_texture_handle,
+        Vec2::new(apple_climb_texture_width, apple_climb_texture_height),
+        10,
+        2,
+        Vec2::new(30.0, 32.0),
+    );
+
+    let apple_hurt_texture_width = 34.0;
+    let apple_hurt_texture_height = 32.0;
+    let apple_hurt_texture_handle = asset_server.load("atlas/player/apple@hurt-sheet.png");
+    let apple_hurt_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_hurt_texture_handle,
+        Vec2::new(apple_hurt_texture_width, apple_hurt_texture_height),
+        8,
+        1,
+        Vec2::new(30.0, 0.0),
+    );
+
+    let apple_death_texture_width = 42.0;
+    let apple_death_texture_height = 42.0;
+    let apple_death_texture_handle = asset_server.load("atlas/player/apple@death-sheet_2.png");
+    let apple_death_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_death_texture_handle,
+        Vec2::new(apple_death_texture_width, apple_death_texture_height),
+        10,
+        4,
+        Vec2::new(22.0, 22.0),
     );
 
     let gray_monster_texture_width = 16.0;
@@ -199,15 +264,30 @@ fn setup(
 
     commands.insert_resource(Sprites {
         player: PlayerSprites {
-            pumpkin: SpriteAssetInfo {
-                width: pumpkin_texture_width,
-                height: pumpkin_texture_height,
-                texture: texture_atlases.add(pumpkin_texture_atlas),
+            idle: SpriteAssetInfo {
+                width: apple_idle_texture_width,
+                height: apple_idle_texture_height,
+                texture: texture_atlases.add(apple_idle_texture_atlas),
             },
-            dragon: SpriteAssetInfo {
-                width: dragon_texture_width,
-                height: dragon_texture_height,
-                texture: texture_atlases.add(dragon_texture_atlas),
+            run: SpriteAssetInfo {
+                width: apple_run_texture_width,
+                height: apple_run_texture_height,
+                texture: texture_atlases.add(apple_run_texture_atlas),
+            },
+            climb: SpriteAssetInfo {
+                width: apple_climb_texture_width,
+                height: apple_climb_texture_height,
+                texture: texture_atlases.add(apple_climb_texture_atlas),
+            },
+            hurt: SpriteAssetInfo {
+                width: apple_hurt_texture_width,
+                height: apple_hurt_texture_height,
+                texture: texture_atlases.add(apple_hurt_texture_atlas),
+            },
+            death: SpriteAssetInfo {
+                width: apple_death_texture_width,
+                height: apple_death_texture_height,
+                texture: texture_atlases.add(apple_death_texture_atlas),
             },
         },
         monsters: MonstersSprites {
@@ -239,10 +319,12 @@ fn main() {
             ..Default::default()
         })
         .add_loopless_state(ApplicationState::Menu(ApplicationStateMenu::Main))
+        .add_loopless_state(PlayerAnimationState::Idle)
         .add_event::<PauseTheGameEvent>()
         .add_event::<ResumeTheGameEvent>()
         .add_event::<ExitTheGameEvent>()
         .add_event::<PlayerIsDeadEvent>()
+        .add_event::<PlayerIsHitEvent>()
         .add_plugins(DefaultPlugins)
         .add_plugin(GameLdtkPlugin)
         .add_startup_system(setup)

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{enemy::Enemy, player::Player, ApplicationState, Health};
+use crate::{enemy::Enemy, player::Player, ApplicationState, Health, PlayerIsHitEvent};
 
 pub struct CombatPlugin;
 
@@ -12,6 +12,7 @@ impl Plugin for CombatPlugin {
             ConditionSet::new()
                 .run_in_state(ApplicationState::Game)
                 .with_system(combat_interaction_detection)
+                .with_system(player_receives_damage)
                 .into(),
         );
     }
@@ -21,12 +22,7 @@ impl Plugin for CombatPlugin {
 fn combat_interaction_detection(
     mut collisions: EventReader<CollisionEvent>,
     mut player_query: Query<
-        (
-            &mut Health,
-            &mut ExternalImpulse,
-            &Collider,
-            &GlobalTransform,
-        ),
+        (&mut ExternalImpulse, &Collider, &GlobalTransform),
         (With<Player>, Without<Enemy>),
     >,
     mut enemy_query: Query<
@@ -38,13 +34,14 @@ fn combat_interaction_detection(
         ),
         (With<Enemy>, Without<Player>),
     >,
+    mut hit_the_player_event: EventWriter<PlayerIsHitEvent>,
 ) {
     for collision in collisions.iter() {
         // Now impulse by `x` axis looks so sharp. I have to understand how to make it
         //  smooth and only after that it would be possible to increase this value
         //  up to 100 or 300 depends on smoothness
-        let impulse_force_horizontal = 30.0;
-        let impulse_force_vertical = 10.0;
+        let impulse_force_horizontal = 120.0;
+        let impulse_force_vertical = 30.0;
 
         match collision {
             CollisionEvent::Started(collider_a, collider_b, _) => {
@@ -64,13 +61,7 @@ fn combat_interaction_detection(
                     None
                 };
 
-                if let Some((
-                    mut player_health,
-                    mut player_impulse,
-                    player_collider,
-                    player_transform,
-                )) = player
-                {
+                if let Some((mut player_impulse, player_collider, player_transform)) = player {
                     if let Some((
                         mut enemy_health,
                         mut enemy_impulse,
@@ -92,9 +83,7 @@ fn combat_interaction_detection(
                             - (enemy_transform.translation.y + enemy_half_size.y))
                             < -3.0
                         {
-                            if player_health.current > 0 {
-                                player_health.current -= 1;
-                            }
+                            hit_the_player_event.send(PlayerIsHitEvent(1));
                         } else if enemy_health.current > 0 {
                             enemy_health.current -= 1;
                         }
@@ -115,6 +104,19 @@ fn combat_interaction_detection(
                 }
             }
             CollisionEvent::Stopped(_, _, _) => {}
+        }
+    }
+}
+
+fn player_receives_damage(
+    mut player_query: Query<&mut Health, With<Player>>,
+    mut hit_the_player_event: EventReader<PlayerIsHitEvent>,
+) {
+    for damage in hit_the_player_event.iter() {
+        if let Ok(mut player_health) = player_query.get_single_mut() {
+            if player_health.current > 0 {
+                player_health.current -= damage.0;
+            }
         }
     }
 }

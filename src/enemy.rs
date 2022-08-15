@@ -273,6 +273,7 @@ fn spawn_enemy(
             .insert(MovementDirection::Right)
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.12, true),
+                index: 0,
             })
             .insert(Speed(80.0))
             // By default enemy are not on move

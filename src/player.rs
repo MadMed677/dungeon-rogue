@@ -7,14 +7,16 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, Climbable, Climber, Health, MovementAnimation, MovementDirection, OnMove,
-    PlayerIsDeadEvent, Speed, Sprites,
+    ApplicationState, ClimbAnimation, Climbable, Climber, DeathAnimation, Health, HurtAnimation,
+    IdleAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
+    PlayerIsHitEvent, Speed, Sprites,
 };
 
 #[derive(Debug, Inspectable)]
 enum PlayerNames {
     Pumpkin,
     Dragon,
+    Apple,
 }
 
 #[derive(Component, Debug, Inspectable)]
@@ -26,6 +28,31 @@ pub struct Player;
 #[derive(Component, Debug, Inspectable)]
 struct GroundDetection {
     pub on_ground: bool,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum PlayerProcessAnimation {
+    Start,
+    End,
+}
+
+/// Describes animation state of the player
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum PlayerAnimationState {
+    /// Player does nothing
+    Idle,
+
+    /// Player run
+    Run,
+
+    /// Player climb
+    Climb,
+
+    /// Player has taken damage but didn't die
+    Hit(PlayerProcessAnimation),
+
+    /// Player died
+    Death(PlayerProcessAnimation),
 }
 
 #[derive(Component)]
@@ -54,13 +81,29 @@ impl Plugin for PlayerPlugin {
                 .run_in_state(ApplicationState::Game)
                 .with_system(spawn_player)
                 .with_system(player_movement)
-                .with_system(player_movement_animation)
+                .with_system(
+                    player_animation_processor.run_not_in_state(PlayerAnimationState::Death(
+                        PlayerProcessAnimation::Start,
+                    )),
+                )
+                .with_system(player_animation_state_processor)
+                .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
+                .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
+                .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
+                .with_system(
+                    player_hurt_animation
+                        .run_in_state(PlayerAnimationState::Hit(PlayerProcessAnimation::Start)),
+                )
+                .with_system(
+                    player_death_animation
+                        .run_in_state(PlayerAnimationState::Death(PlayerProcessAnimation::Start)),
+                )
                 .with_system(player_jump)
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
-                .with_system(change_player_texture)
                 .with_system(spawn_ground_sensor)
                 .with_system(ground_detection)
+                .with_system(test_death_animation)
                 .with_system(dead)
                 .into(),
         )
@@ -74,7 +117,7 @@ fn spawn_player(
     player_query: Query<(Entity, &Transform), Added<Player>>,
 ) {
     if let Ok((player_entity, transform)) = player_query.get_single() {
-        let sprite_asset_info = &materials.player.pumpkin;
+        let sprite_asset_info = &materials.player.idle;
 
         let sprite_width = sprite_asset_info.width;
         let sprite_height = sprite_asset_info.height;
@@ -100,7 +143,7 @@ fn spawn_player(
                     translation: transform.translation,
                     rotation: transform.rotation,
                     // scale: transform.scale,
-                    scale: Vec3::new(0.8, 0.8, 1.0),
+                    scale: Vec3::new(0.7, 0.7, 1.0),
                 },
                 sprite: TextureAtlasSprite {
                     flip_x: match &player_direction {
@@ -111,9 +154,20 @@ fn spawn_player(
                 },
                 ..Default::default()
             })
-            .insert(PlayerName(PlayerNames::Pumpkin))
+            .insert(PlayerName(PlayerNames::Apple))
             .insert(player_direction)
+            .insert(IdleAnimation {
+                timer: Timer::from_seconds(0.1, true),
+            })
             .insert(MovementAnimation {
+                timer: Timer::from_seconds(0.1, true),
+                index: 0,
+            })
+            .insert(ClimbAnimation {
+                timer: Timer::from_seconds(0.15, true),
+                index: 0,
+            })
+            .insert(HurtAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
             .insert(OnMove(false))
@@ -124,10 +178,155 @@ fn spawn_player(
             })
             .insert(GroundDetection { on_ground: false })
             .insert(Health {
-                current: 10,
+                current: 2,
                 max: 10,
             })
             .insert(Speed(120.0));
+    }
+}
+
+fn test_death_animation(
+    keyboard: Res<Input<KeyCode>>,
+    mut player_death_event: EventWriter<PlayerIsDeadEvent>,
+) {
+    if keyboard.just_pressed(KeyCode::D) {
+        player_death_event.send(PlayerIsDeadEvent);
+    }
+}
+
+/// Triggers when `animation_state` has changed and update user texture
+fn player_animation_state_processor(
+    mut commands: Commands,
+    materials: Res<Sprites>,
+    animation_state: Res<CurrentState<PlayerAnimationState>>,
+    mut player_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Player>>,
+    death_animation_query: Query<Entity, With<DeathAnimation>>,
+) {
+    if animation_state.is_changed() {
+        if let Ok((entity, transform, mut sprite)) = player_query.get_single_mut() {
+            sprite.index = 0;
+
+            match animation_state.0 {
+                PlayerAnimationState::Idle => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.idle.texture.clone());
+                }
+                PlayerAnimationState::Run => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.run.texture.clone());
+                }
+                PlayerAnimationState::Climb => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.climb.texture.clone());
+                }
+                PlayerAnimationState::Hit(hit_animation) => match hit_animation {
+                    PlayerProcessAnimation::Start => {
+                        commands
+                            .entity(entity)
+                            .insert(materials.player.hurt.texture.clone());
+                    }
+                    PlayerProcessAnimation::End => {
+                        commands.insert_resource(NextState(PlayerAnimationState::Idle));
+                    }
+                },
+                PlayerAnimationState::Death(death_animation) => match death_animation {
+                    PlayerProcessAnimation::Start => {
+                        // Spawn player death animation
+                        commands
+                            .spawn_bundle(SpriteSheetBundle {
+                                texture_atlas: materials.player.death.texture.clone(),
+                                transform: *transform,
+                                sprite: TextureAtlasSprite {
+                                    flip_x: sprite.flip_x,
+                                    ..Default::default()
+                                },
+                                ..Default::default()
+                            })
+                            .insert(DeathAnimation {
+                                timer: Timer::from_seconds(0.1, true),
+                            });
+
+                        // Remove the player from the scene
+                        commands.entity(entity).despawn_recursive();
+                    }
+                    PlayerProcessAnimation::End => {
+                        unreachable!();
+                    }
+                },
+            }
+
+            return;
+        }
+
+        // This match should be only when the Player is destroyed
+        // This is happening only when the Player is dead and
+        //  we removed it from the scene
+        if animation_state.0 == PlayerAnimationState::Death(PlayerProcessAnimation::End) {
+            // We should remove useless sprite
+            if let Ok(death_sprite_entity) = death_animation_query.get_single() {
+                commands.entity(death_sprite_entity).despawn();
+            }
+        }
+    }
+}
+
+/// Handle all physical changes and set correct player material texture
+#[allow(clippy::type_complexity)]
+fn player_animation_processor(
+    player_animation_state: Res<CurrentState<PlayerAnimationState>>,
+    mut commands: Commands,
+    mut player_query: Query<(&OnMove, &Climber), With<Player>>,
+    mut player_hit_event: EventReader<PlayerIsHitEvent>,
+    mut player_death_event: EventReader<PlayerIsDeadEvent>,
+) {
+    if let Ok((on_move, climber)) = player_query.get_single_mut() {
+        if player_death_event.iter().next().is_some() {
+            commands.insert_resource(NextState(PlayerAnimationState::Death(
+                PlayerProcessAnimation::Start,
+            )));
+
+            return;
+        }
+
+        if player_hit_event.iter().next().is_some() {
+            commands.insert_resource(NextState(PlayerAnimationState::Hit(
+                PlayerProcessAnimation::Start,
+            )));
+
+            return;
+        }
+
+        // Forbid the next animation until player finish the current one
+        if player_animation_state.0 == PlayerAnimationState::Hit(PlayerProcessAnimation::Start)
+            || player_animation_state.0
+                == PlayerAnimationState::Death(PlayerProcessAnimation::Start)
+        {
+            return;
+        }
+
+        // Climbing has more priority than movement or idle
+        if climber.climbing {
+            if player_animation_state.0 != PlayerAnimationState::Climb {
+                commands.insert_resource(NextState(PlayerAnimationState::Climb));
+            }
+
+            return;
+        }
+
+        if on_move.0 {
+            if player_animation_state.0 != PlayerAnimationState::Run {
+                commands.insert_resource(NextState(PlayerAnimationState::Run));
+            }
+
+            return;
+        }
+
+        if player_animation_state.0 != PlayerAnimationState::Idle {
+            commands.insert_resource(NextState(PlayerAnimationState::Idle));
+        }
     }
 }
 
@@ -166,9 +365,15 @@ fn player_movement(
         velocity.linvel.x = move_delta_x;
 
         // Change `OnMove` component
+        // But we need to change `OnMove` component
+        //  only if we need it. Do not update OnMove
+        //  component every time. Otherwise `Changed<OnMove>`
+        //  signal will be called everytime
         if move_delta_x != 0.0 {
-            on_move.0 = true;
-        } else {
+            if !on_move.0 {
+                on_move.0 = true;
+            }
+        } else if on_move.0 {
             on_move.0 = false;
         }
 
@@ -183,7 +388,9 @@ fn player_movement(
 
         /* Climbing logic */
         if climber.intersaction_elements.is_empty() {
-            climber.climbing = false;
+            if climber.climbing {
+                climber.climbing = false;
+            }
         } else if keyboard.just_pressed(KeyCode::Up) || keyboard.just_pressed(KeyCode::Down) {
             climber.climbing = true;
         }
@@ -210,18 +417,59 @@ fn player_jump(
     {
         if keyboard.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing)
         {
-            external_impulse.impulse = Vec2::new(0.0, 35.0);
+            external_impulse.impulse = Vec2::new(0.0, 65.0);
             climber.climbing = false;
         }
     }
 }
 
-fn player_movement_animation(
+fn player_idle_animation(
+    time: Res<Time>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut IdleAnimation), With<Player>>,
+) {
+    for (mut sprite, mut idle_animation) in query.iter_mut() {
+        // Do nothing if the player is not in idle
+
+        idle_animation.timer.tick(time.delta());
+
+        if idle_animation.timer.finished() {
+            sprite.index += 1;
+
+            // 24 - is a maximum amount of textures for idle state
+            if sprite.index >= 24 {
+                // Loop the animation
+                sprite.index = 0;
+            }
+        }
+    }
+}
+
+fn player_climb_animation(
+    time: Res<Time>,
+    mut query: Query<(&Velocity, &mut TextureAtlasSprite, &mut ClimbAnimation), With<Player>>,
+) {
+    for (velocity, mut sprite, mut climb_animation) in query.iter_mut() {
+        climb_animation.timer.tick(time.delta());
+
+        if climb_animation.timer.finished() {
+            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            let y_velocity = velocity.linvel.y;
+
+            #[allow(clippy::manual_range_contains)]
+            if y_velocity > 20.0 || y_velocity < -20.0 {
+                climb_animation.index = (climb_animation.index + 1) % 12;
+
+                sprite.index = climb_animation.index;
+            }
+        }
+    }
+}
+
+fn player_run_animation(
     texture_atlases: Res<Assets<TextureAtlas>>,
     time: Res<Time>,
     mut query: Query<
         (
-            &OnMove,
             &mut TextureAtlasSprite,
             &Handle<TextureAtlas>,
             &mut MovementAnimation,
@@ -229,25 +477,83 @@ fn player_movement_animation(
         With<Player>,
     >,
 ) {
-    for (on_move, mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
-        // If the player is not on move
-        //  set the first sprite which is equal to
-        //  player default state and do nothing
-        if !on_move.0 {
-            sprite.index = 0;
-
-            return;
-        }
-
+    for (mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
         movement_animation.timer.tick(time.delta());
 
         if movement_animation.timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+
+            movement_animation.index += 1;
+
+            if movement_animation.index >= texture_atlas.textures.len() {
+                movement_animation.index = 0;
+            }
+
+            sprite.index = movement_animation.index;
+        }
+    }
+}
+
+fn player_hurt_animation(
+    mut commands: Commands,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    time: Res<Time>,
+    mut query: Query<
+        (
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+            &mut HurtAnimation,
+        ),
+        With<Player>,
+    >,
+) {
+    for (mut sprite, texture_atlas_handle, mut hurt_animation) in query.iter_mut() {
+        hurt_animation.timer.tick(time.delta());
+
+        if hurt_animation.timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+
             sprite.index += 1;
 
-            if sprite.index == texture_atlas.textures.len() {
-                // Loop the animation
+            if sprite.index >= texture_atlas.textures.len() {
+                // We should stop the animation and give back the control
                 sprite.index = 0;
+
+                commands.insert_resource(NextState(PlayerAnimationState::Hit(
+                    PlayerProcessAnimation::End,
+                )));
+            }
+        }
+    }
+}
+
+fn player_death_animation(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(
+        &mut TextureAtlasSprite,
+        &mut DeathAnimation,
+        &mut Visibility,
+    )>,
+) {
+    for (mut sprite, mut death_animation, mut visibility) in query.iter_mut() {
+        death_animation.timer.tick(time.delta());
+
+        if death_animation.timer.finished() {
+            sprite.index += 1;
+
+            // Send death state of 1 frome earlier to be able to remove the user
+            //  and avoid the idle state
+            if sprite.index >= 36 {
+                // We should stop the animation and give back the control
+                sprite.index = 0;
+
+                commands.insert_resource(NextState(PlayerAnimationState::Death(
+                    PlayerProcessAnimation::End,
+                )));
+
+                // Hide the entity until remove it from the scene
+                visibility.is_visible = false;
             }
         }
     }
@@ -275,7 +581,6 @@ fn spawn_ground_sensor(
                     //  otherwise it will affect the user but we want to make it
                     //  just as trigger for ground detection reaction
                     .insert(ColliderMassProperties::Density(0.0))
-                    // .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(GroundSensor {
                         ground_detection_entity: entity,
                         intersecting_ground_entities: HashSet::new(),
@@ -328,12 +633,16 @@ fn detect_climb(
                 if let Ok(mut climber) = climbers.get_mut(*collider_a) {
                     if climbables.get(*collider_b).is_ok() {
                         climber.intersaction_elements.insert(*collider_b);
+
+                        continue;
                     }
                 }
 
                 if let Ok(mut climber) = climbers.get_mut(*collider_b) {
                     if climbables.get(*collider_a).is_ok() {
                         climber.intersaction_elements.insert(*collider_a);
+
+                        continue;
                     }
                 }
             }
@@ -341,12 +650,16 @@ fn detect_climb(
                 if let Ok(mut climber) = climbers.get_mut(*collider_a) {
                     if climbables.get(*collider_b).is_ok() {
                         climber.intersaction_elements.remove(collider_b);
+
+                        continue;
                     }
                 }
 
                 if let Ok(mut climber) = climbers.get_mut(*collider_b) {
                     if climbables.get(*collider_a).is_ok() {
                         climber.intersaction_elements.remove(collider_a);
+
+                        continue;
                     }
                 }
             }
@@ -362,59 +675,6 @@ fn ignore_gravity_during_climbing(
             gravity.0 = 0.0;
         } else {
             gravity.0 = 3.0;
-        }
-    }
-}
-
-fn change_player_texture(
-    keyboard: Res<Input<KeyCode>>,
-    materials: Res<Sprites>,
-    mut player_query: Query<
-        (
-            &mut Handle<TextureAtlas>,
-            &mut TextureAtlasSprite,
-            &mut Collider,
-            &mut PlayerName,
-            &mut Transform,
-        ),
-        With<Player>,
-    >,
-) {
-    if let Ok((mut texture_atlas, mut sprite, mut collider, mut player_name, mut transform)) =
-        player_query.get_single_mut()
-    {
-        // If player want to change player texture by pressing `Q` character
-        if keyboard.just_pressed(KeyCode::Q) {
-            let sprite_asset_info = match &player_name.0 {
-                PlayerNames::Pumpkin => {
-                    player_name.0 = PlayerNames::Dragon;
-
-                    &materials.player.dragon
-                }
-                PlayerNames::Dragon => {
-                    player_name.0 = PlayerNames::Pumpkin;
-
-                    &materials.player.pumpkin
-                }
-            };
-
-            // Change the texture
-            *texture_atlas = sprite_asset_info.texture.clone();
-
-            // Reset the animation
-            sprite.index = 0;
-
-            // Change the object bounds
-            *collider = Collider::cuboid(
-                sprite_asset_info.width / 2.0,
-                sprite_asset_info.height / 2.0,
-            );
-
-            // Push the player a little bit up
-            //  to avoid the problem when the one sprite
-            //  is less than another sprite and we may
-            //  have a collision mismatch with the ground
-            transform.translation.y += 8.0;
         }
     }
 }
@@ -690,7 +950,7 @@ mod player_tests {
             .get::<ExternalImpulse>(player_id)
             .expect("Should have external impulse");
 
-        assert_eq!(impulse.impulse, Vec2::new(0.0, 35.0));
+        assert_eq!(impulse.impulse, Vec2::new(0.0, 65.0));
     }
 
     #[test]
