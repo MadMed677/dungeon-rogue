@@ -235,7 +235,7 @@ fn setup(
         Vec2::new(apple_death_texture_width, apple_death_texture_height),
         10,
         4,
-        Vec2::new(22.0, 20.0),
+        Vec2::new(22.0, 22.0),
     );
 
     let gray_monster_texture_width = 16.0;
