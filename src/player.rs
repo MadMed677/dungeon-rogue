@@ -950,7 +950,7 @@ mod player_tests {
             .get::<ExternalImpulse>(player_id)
             .expect("Should have external impulse");
 
-        assert_eq!(impulse.impulse, Vec2::new(0.0, 35.0));
+        assert_eq!(impulse.impulse, Vec2::new(0.0, 65.0));
     }
 
     #[test]
