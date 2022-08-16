@@ -119,8 +119,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(spawn_ground_sensor)
-                .with_system(ground_detection_2)
-                // .with_system(ground_detection)
+                .with_system(ground_detection)
                 .with_system(test_death_animation)
                 .with_system(dead)
                 .into(),
@@ -645,56 +644,37 @@ fn spawn_ground_sensor(
     }
 }
 
-fn ground_detection_2(
+fn ground_detection(
     mut ground_detectors: Query<(Entity, &mut GroundDetection)>,
-
-    // The sensors itself
-    mut ground_sensors: Query<(Entity, &mut GroundSensor, &CollisionGroups)>,
+    mut ground_sensors: Query<(Entity, &mut GroundSensor)>,
     mut collisions: EventReader<CollisionEvent>,
-
-    // Only walls
-    rigid_bodies: Query<&CollisionGroups, (With<RigidBody>, Without<Player>)>,
 ) {
-    for (ground_sensor_entity, mut ground_sensor, sensor_collision_group) in
-        ground_sensors.iter_mut()
-    {
+    for (ground_sensor_entity, mut ground_sensor) in ground_sensors.iter_mut() {
         for collision in collisions.iter() {
             match collision {
                 CollisionEvent::Started(collision_a, collision_b, _) => {
-                    if let Ok(rigid_body_collision_group) = rigid_bodies.get(*collision_a) {
-                        if sensor_collision_group.memberships
-                            == rigid_body_collision_group.memberships
-                            && sensor_collision_group.filters == rigid_body_collision_group.filters
-                        {
-                            // If one of the collisions has GroundDetection (like a Player)
-                            //  we shouldn't work with it
-                            if ground_detectors.get(*collision_a).is_ok()
-                                || ground_detectors.get(*collision_b).is_ok()
-                            {
-                                return;
-                            }
+                    if (*collision_b == ground_sensor_entity)
+                        && ground_detectors
+                            .get_mut(ground_sensor.ground_detection_entity)
+                            .is_ok()
+                    {
+                        ground_sensor
+                            .intersecting_ground_entities
+                            .insert(*collision_a);
 
-                            ground_sensor
-                                .intersecting_ground_entities
-                                .insert(*collision_a);
-                        }
-                    } else if let Ok(rigid_body_collision_group) = rigid_bodies.get(*collision_b) {
-                        if sensor_collision_group.memberships
-                            == rigid_body_collision_group.memberships
-                            && sensor_collision_group.filters == rigid_body_collision_group.filters
-                        {
-                            // If one of the collisions has GroundDetection (like a Player)
-                            //  we shouldn't work with it
-                            if ground_detectors.get(*collision_a).is_ok()
-                                || ground_detectors.get(*collision_b).is_ok()
-                            {
-                                return;
-                            }
+                        return;
+                    }
 
-                            ground_sensor
-                                .intersecting_ground_entities
-                                .insert(*collision_b);
-                        }
+                    if (*collision_a == ground_sensor_entity)
+                        && ground_detectors
+                            .get_mut(ground_sensor.ground_detection_entity)
+                            .is_ok()
+                    {
+                        ground_sensor
+                            .intersecting_ground_entities
+                            .insert(*collision_b);
+
+                        return;
                     }
                 }
                 CollisionEvent::Stopped(collision_a, collision_b, _) => {
@@ -733,62 +713,6 @@ fn ground_detection_2(
             if ground_detection.on_ground != next_on_ground {
                 ground_detection.on_ground = next_on_ground;
             }
-        }
-    }
-}
-
-fn ground_detection(
-    mut ground_detectors: Query<&mut GroundDetection>,
-    mut ground_sensors: Query<(Entity, &mut GroundSensor)>,
-    mut collisions: EventReader<CollisionEvent>,
-    rigid_bodies: Query<(&RigidBody, &CollisionGroups)>,
-) {
-    for (sensor_entity, mut ground_sensor) in ground_sensors.iter_mut() {
-        for collision in collisions.iter() {
-            match collision {
-                CollisionEvent::Started(collision_a, collision_b, _) => {
-                    if rigid_bodies.get(*collision_a).is_ok()
-                        && &ground_sensor.ground_detection_entity == collision_b
-                    {
-                        ground_sensor
-                            .intersecting_ground_entities
-                            .insert(*collision_a);
-                    }
-
-                    if rigid_bodies.get(*collision_b).is_ok() {
-                        println!("found contact with collision_b");
-                    }
-
-                    // if rigid_bodies.get(*collision_b).is_ok()
-                    //     && collision_b == &ground_sensor.ground_detection_entity
-                    // {
-                    //     ground_sensor
-                    //         .intersecting_ground_entities
-                    //         .insert(*collision_a);
-                    // }
-                }
-                CollisionEvent::Stopped(collision_a, collision_b, _) => {
-                    if *collision_a == sensor_entity {
-                        println!("[stop] collision_a");
-                    }
-
-                    if *collision_b == sensor_entity {
-                        println!("[stop] collision_b");
-                    }
-
-                    if collision_b == &ground_sensor.ground_detection_entity {
-                        ground_sensor
-                            .intersecting_ground_entities
-                            .remove(collision_a);
-                    }
-                }
-            }
-        }
-
-        if let Ok(mut ground_detection) =
-            ground_detectors.get_mut(ground_sensor.ground_detection_entity)
-        {
-            ground_detection.on_ground = !ground_sensor.intersecting_ground_entities.is_empty();
         }
     }
 }
