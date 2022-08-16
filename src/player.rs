@@ -7,8 +7,9 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
+    map::{Wall, WallCollision},
     ApplicationState, ClimbAnimation, Climbable, Climber, DeathAnimation, Health, HurtAnimation,
-    IdleAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
+    IdleAnimation, JumpAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
     PlayerIsHitEvent, Speed, Sprites,
 };
 
@@ -30,14 +31,20 @@ struct GroundDetection {
     pub on_ground: bool,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
 pub enum PlayerProcessAnimation {
     Start,
     End,
 }
 
+impl Default for PlayerProcessAnimation {
+    fn default() -> Self {
+        Self::Start
+    }
+}
+
 /// Describes animation state of the player
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
 pub enum PlayerAnimationState {
     /// Player does nothing
     Idle,
@@ -53,6 +60,15 @@ pub enum PlayerAnimationState {
 
     /// Player died
     Death(PlayerProcessAnimation),
+
+    /// Player jump
+    Jump,
+}
+
+impl Default for PlayerAnimationState {
+    fn default() -> Self {
+        Self::Idle
+    }
 }
 
 #[derive(Component)]
@@ -90,6 +106,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
                 .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
                 .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
+                .with_system(player_jump_animation.run_in_state(PlayerAnimationState::Jump))
                 .with_system(
                     player_hurt_animation
                         .run_in_state(PlayerAnimationState::Hit(PlayerProcessAnimation::Start)),
@@ -102,7 +119,8 @@ impl Plugin for PlayerPlugin {
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(spawn_ground_sensor)
-                .with_system(ground_detection)
+                .with_system(ground_detection_2)
+                // .with_system(ground_detection)
                 .with_system(test_death_animation)
                 .with_system(dead)
                 .into(),
@@ -170,6 +188,9 @@ fn spawn_player(
             .insert(HurtAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
+            .insert(JumpAnimation {
+                timer: Timer::from_seconds(0.04, true),
+            })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -232,6 +253,11 @@ fn player_animation_state_processor(
                         commands.insert_resource(NextState(PlayerAnimationState::Idle));
                     }
                 },
+                PlayerAnimationState::Jump => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.jump.texture.clone());
+                }
                 PlayerAnimationState::Death(death_animation) => match death_animation {
                     PlayerProcessAnimation::Start => {
                         // Spawn player death animation
@@ -278,11 +304,11 @@ fn player_animation_state_processor(
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
-    mut player_query: Query<(&OnMove, &Climber), With<Player>>,
+    mut player_query: Query<(&OnMove, &Climber, &GroundDetection), With<Player>>,
     mut player_hit_event: EventReader<PlayerIsHitEvent>,
     mut player_death_event: EventReader<PlayerIsDeadEvent>,
 ) {
-    if let Ok((on_move, climber)) = player_query.get_single_mut() {
+    if let Ok((on_move, climber, ground_detection)) = player_query.get_single_mut() {
         if player_death_event.iter().next().is_some() {
             commands.insert_resource(NextState(PlayerAnimationState::Death(
                 PlayerProcessAnimation::Start,
@@ -311,6 +337,14 @@ fn player_animation_processor(
         if climber.climbing {
             if player_animation_state.0 != PlayerAnimationState::Climb {
                 commands.insert_resource(NextState(PlayerAnimationState::Climb));
+            }
+
+            return;
+        }
+
+        if !ground_detection.on_ground {
+            if player_animation_state.0 != PlayerAnimationState::Jump {
+                commands.insert_resource(NextState(PlayerAnimationState::Jump));
             }
 
             return;
@@ -494,6 +528,24 @@ fn player_run_animation(
     }
 }
 
+fn player_jump_animation(
+    time: Res<Time>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut JumpAnimation), With<Player>>,
+) {
+    for (mut sprite, mut jump_animation) in query.iter_mut() {
+        jump_animation.timer.tick(time.delta());
+        if jump_animation.timer.finished() {
+            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+
+            sprite.index += 1;
+
+            if sprite.index >= 13 {
+                sprite.index = 0;
+            }
+        }
+    }
+}
+
 fn player_hurt_animation(
     mut commands: Commands,
     texture_atlases: Res<Assets<TextureAtlas>>,
@@ -567,7 +619,7 @@ fn spawn_ground_sensor(
         if let Some(cuboid) = collider.as_cuboid() {
             let half_extents = &cuboid.half_extents();
 
-            let detector_shape = Collider::cuboid(half_extents.x, half_extents.y);
+            let detector_shape = Collider::cuboid(half_extents.x, 2.0);
             let sensor_translation = Vec3::new(0.0, -half_extents.y, 0.0) / transform.scale;
 
             commands.entity(entity).with_children(|parent| {
@@ -575,12 +627,15 @@ fn spawn_ground_sensor(
                     .spawn()
                     .insert(Sensor)
                     .insert(detector_shape)
+                    // .insert(detector_shape)
                     .insert(Transform::from_translation(sensor_translation))
                     .insert(GlobalTransform::default())
                     // We should make the weight of this rigid body as 0 because
                     //  otherwise it will affect the user but we want to make it
                     //  just as trigger for ground detection reaction
+                    .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(ColliderMassProperties::Density(0.0))
+                    .insert(CollisionGroups::new(0b1101, 0b0100))
                     .insert(GroundSensor {
                         ground_detection_entity: entity,
                         intersecting_ground_entities: HashSet::new(),
@@ -590,25 +645,112 @@ fn spawn_ground_sensor(
     }
 }
 
+fn ground_detection_2(
+    mut ground_detectors: Query<(Entity, &mut GroundDetection)>,
+
+    // The sensors itself
+    mut ground_sensors: Query<(Entity, &mut GroundSensor, &CollisionGroups)>,
+    mut collisions: EventReader<CollisionEvent>,
+
+    // Only walls
+    rigid_bodies: Query<&CollisionGroups, (With<RigidBody>, Without<Player>)>,
+) {
+    for (ground_sensor_entity, mut ground_sensor, sensor_collision_group) in
+        ground_sensors.iter_mut()
+    {
+        for collision in collisions.iter() {
+            match collision {
+                CollisionEvent::Started(collision_a, collision_b, _) => {
+                    if let Ok(rigid_body_collision_group) = rigid_bodies.get(*collision_a) {
+                        if sensor_collision_group.memberships
+                            == rigid_body_collision_group.memberships
+                            && sensor_collision_group.filters == rigid_body_collision_group.filters
+                        {
+                            // If one of the collisions has GroundDetection (like a Player)
+                            //  we shouldn't work with it
+                            if ground_detectors.get(*collision_a).is_ok()
+                                || ground_detectors.get(*collision_b).is_ok()
+                            {
+                                return;
+                            }
+
+                            ground_sensor
+                                .intersecting_ground_entities
+                                .insert(*collision_a);
+                        }
+                    }
+                }
+                CollisionEvent::Stopped(collision_a, collision_b, _) => {
+                    if (*collision_a == ground_sensor_entity
+                        || *collision_b == ground_sensor_entity)
+                        && ground_detectors
+                            .get_mut(ground_sensor.ground_detection_entity)
+                            .is_ok()
+                    {
+                        ground_sensor
+                            .intersecting_ground_entities
+                            .remove(collision_a);
+                    }
+                    return;
+                }
+            }
+        }
+
+        if let Ok((_, mut ground_detection)) =
+            ground_detectors.get_mut(ground_sensor.ground_detection_entity)
+        {
+            let next_on_ground = !ground_sensor.intersecting_ground_entities.is_empty();
+
+            if ground_detection.on_ground != next_on_ground {
+                ground_detection.on_ground = next_on_ground;
+            }
+        }
+    }
+}
+
 fn ground_detection(
     mut ground_detectors: Query<&mut GroundDetection>,
     mut ground_sensors: Query<(Entity, &mut GroundSensor)>,
     mut collisions: EventReader<CollisionEvent>,
-    rigid_bodies: Query<&RigidBody>,
+    rigid_bodies: Query<(&RigidBody, &CollisionGroups)>,
 ) {
-    for (_, mut ground_sensor) in ground_sensors.iter_mut() {
+    for (sensor_entity, mut ground_sensor) in ground_sensors.iter_mut() {
         for collision in collisions.iter() {
             match collision {
-                CollisionEvent::Started(ground, player, _) => {
-                    if rigid_bodies.get(*player).is_ok()
-                        && player == &ground_sensor.ground_detection_entity
+                CollisionEvent::Started(collision_a, collision_b, _) => {
+                    if rigid_bodies.get(*collision_a).is_ok()
+                        && &ground_sensor.ground_detection_entity == collision_b
                     {
-                        ground_sensor.intersecting_ground_entities.insert(*ground);
+                        ground_sensor
+                            .intersecting_ground_entities
+                            .insert(*collision_a);
                     }
+
+                    if rigid_bodies.get(*collision_b).is_ok() {
+                        println!("found contact with collision_b");
+                    }
+
+                    // if rigid_bodies.get(*collision_b).is_ok()
+                    //     && collision_b == &ground_sensor.ground_detection_entity
+                    // {
+                    //     ground_sensor
+                    //         .intersecting_ground_entities
+                    //         .insert(*collision_a);
+                    // }
                 }
-                CollisionEvent::Stopped(ground, player, _) => {
-                    if player == &ground_sensor.ground_detection_entity {
-                        ground_sensor.intersecting_ground_entities.remove(ground);
+                CollisionEvent::Stopped(collision_a, collision_b, _) => {
+                    if *collision_a == sensor_entity {
+                        println!("[stop] collision_a");
+                    }
+
+                    if *collision_b == sensor_entity {
+                        println!("[stop] collision_b");
+                    }
+
+                    if collision_b == &ground_sensor.ground_detection_entity {
+                        ground_sensor
+                            .intersecting_ground_entities
+                            .remove(collision_a);
                     }
                 }
             }

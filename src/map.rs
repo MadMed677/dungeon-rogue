@@ -239,6 +239,7 @@ fn spawn_wall_collision(
                         .insert(Transform::from_xyz(x, y, 0.0))
                         .insert(GlobalTransform::default())
                         .insert(WallCollision)
+                        .insert(CollisionGroups::new(0b1101, 0b0100))
                         .insert(Parent(level_entity));
                 }
             }

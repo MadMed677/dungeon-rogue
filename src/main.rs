@@ -49,6 +49,11 @@ pub struct ClimbAnimation {
 }
 
 #[derive(Component)]
+pub struct JumpAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
 pub struct MovementAnimation {
     timer: Timer,
     index: usize,
@@ -123,6 +128,7 @@ struct PlayerSprites {
     climb: SpriteAssetInfo,
     hurt: SpriteAssetInfo,
     death: SpriteAssetInfo,
+    jump: SpriteAssetInfo,
 }
 
 struct MonstersSprites {
@@ -238,6 +244,17 @@ fn setup(
         Vec2::new(22.0, 22.0),
     );
 
+    let apple_jump_texture_width = 32.0;
+    let apple_jump_texture_height = 32.0;
+    let apple_jump_texture_handle = asset_server.load("atlas/player/apple@jump-sheet_2.png");
+    let apple_jump_texture_atlas = TextureAtlas::from_grid_with_padding(
+        apple_jump_texture_handle,
+        Vec2::new(apple_jump_texture_width, apple_jump_texture_height),
+        10,
+        2,
+        Vec2::new(32.0, 32.0),
+    );
+
     let gray_monster_texture_width = 16.0;
     let gray_monster_texture_height = 16.0;
     let gray_monster_texture_handle = asset_server.load("atlas/enemies/gray_monster.png");
@@ -288,6 +305,11 @@ fn setup(
                 width: apple_death_texture_width,
                 height: apple_death_texture_height,
                 texture: texture_atlases.add(apple_death_texture_atlas),
+            },
+            jump: SpriteAssetInfo {
+                width: apple_jump_texture_width,
+                height: apple_jump_texture_height,
+                texture: texture_atlases.add(apple_jump_texture_atlas),
             },
         },
         monsters: MonstersSprites {
