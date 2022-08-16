@@ -7,10 +7,9 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    map::{Wall, WallCollision},
-    ApplicationState, ClimbAnimation, Climbable, Climber, DeathAnimation, Health, HurtAnimation,
-    IdleAnimation, JumpAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
-    PlayerIsHitEvent, Speed, Sprites,
+    ron_parsers::GameTextures, ApplicationState, ClimbAnimation, Climbable, Climber,
+    DeathAnimation, Health, HurtAnimation, IdleAnimation, JumpAnimation, MovementAnimation,
+    MovementDirection, OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
 };
 
 #[derive(Debug, Inspectable)]
@@ -130,7 +129,7 @@ impl Plugin for PlayerPlugin {
 
 fn spawn_player(
     mut commands: Commands,
-    materials: Res<Sprites>,
+    materials: Res<GameTextures>,
     player_query: Query<(Entity, &Transform), Added<Player>>,
 ) {
     if let Ok((player_entity, transform)) = player_query.get_single() {
@@ -217,7 +216,7 @@ fn test_death_animation(
 /// Triggers when `animation_state` has changed and update user texture
 fn player_animation_state_processor(
     mut commands: Commands,
-    materials: Res<Sprites>,
+    materials: Res<GameTextures>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut player_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Player>>,
     death_animation_query: Query<Entity, With<DeathAnimation>>,

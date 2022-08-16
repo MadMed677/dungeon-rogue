@@ -2,51 +2,58 @@
 use bevy::prelude::*;
 
 #[cfg(test)]
-use crate::{PlayerSprites, Sprites};
+use crate::ron_parsers::{
+    EnemiesSprites, GameTextures, PlayerSprites, SpriteAssetInfo, TutorialSprites,
+};
 
 #[cfg(test)]
-pub fn prepare_sprites() -> Sprites {
-    Sprites {
+pub fn prepare_sprites() -> GameTextures {
+    GameTextures {
         player: PlayerSprites {
-            idle: crate::SpriteAssetInfo {
+            idle: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
-            run: crate::SpriteAssetInfo {
+            run: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
-            climb: crate::SpriteAssetInfo {
+            climb: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
-            hurt: crate::SpriteAssetInfo {
+            hurt: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
-            death: crate::SpriteAssetInfo {
+            death: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
-        },
-        monsters: crate::MonstersSprites {
-            gray: crate::SpriteAssetInfo {
-                width: 10.0,
-                height: 10.0,
-                texture: Handle::default(),
-            },
-            long: crate::SpriteAssetInfo {
+            jump: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
                 texture: Handle::default(),
             },
         },
-        tutorial: crate::TutorialSprites {
+        enemies: EnemiesSprites {
+            gray: SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                texture: Handle::default(),
+            },
+            long: SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                texture: Handle::default(),
+            },
+        },
+        tutorials: TutorialSprites {
             movement: Handle::default(),
         },
     }

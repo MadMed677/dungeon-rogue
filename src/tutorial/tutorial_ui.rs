@@ -2,8 +2,9 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::LevelSelection;
 use iyes_loopless::prelude::*;
 
+use crate::ron_parsers::GameTextures;
 use crate::tutorial::tutorial_physics::{Tutorial, TutorialPassed, TutorialType};
-use crate::{ApplicationState, Sprites};
+use crate::ApplicationState;
 
 #[derive(Component)]
 struct MovementTutorialUi;
@@ -26,7 +27,7 @@ impl Plugin for TutorialUiPlugin {
 fn spawn_movement_ui(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    sprites: &Res<Sprites>,
+    sprites: &Res<GameTextures>,
     tutorial_type: &TutorialType,
 ) -> Entity {
     commands
@@ -95,7 +96,7 @@ fn spawn_movement_ui(
                             size: Size::new(Val::Auto, Val::Percent(90.0)),
                             ..Default::default()
                         },
-                        image: sprites.tutorial.movement.clone().into(),
+                        image: sprites.tutorials.movement.clone().into(),
                         ..Default::default()
                     });
                 });
@@ -106,7 +107,7 @@ fn spawn_movement_ui(
 
 fn spawn_tutorial(
     mut commands: Commands,
-    sprites: Res<Sprites>,
+    sprites: Res<GameTextures>,
     asset_server: Res<AssetServer>,
     level_selection: Res<LevelSelection>,
     mut tutorial_query: Query<

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_kira_audio::{AudioApp, AudioChannel, AudioPlugin, AudioSource};
 use iyes_loopless::prelude::*;
 
-use crate::settings::Settings;
+use crate::ron_parsers::Settings;
 use crate::ApplicationState;
 
 pub struct GameAudioPlugin;

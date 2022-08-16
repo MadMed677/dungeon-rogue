@@ -1,0 +1,76 @@
+DeserializedGameTextures(
+    player: [
+        DeserializedPlayerSpriteInfo(
+            sprite_type: Idle,
+            width: 34.0,
+            height: 32.0,
+            texture_path: "atlas/player/apple@idle-sheet.png",
+            items: 24,
+            column_size: 10,
+        ),
+        DeserializedPlayerSpriteInfo(
+            sprite_type: Run,
+            width: 24.0,
+            height: 32.0,
+            texture_path: "atlas/player/apple@run-sheet.png",
+            items: 10,
+            column_size: 10,
+        ),
+        DeserializedPlayerSpriteInfo(
+            sprite_type: Climb,
+            width: 34.0,
+            height: 32.0,
+            texture_path: "atlas/player/apple@climb-sheet.png",
+            items: 12,
+            column_size: 10,
+        ),
+        DeserializedPlayerSpriteInfo(
+            sprite_type: Jump,
+            width: 32.0,
+            height: 32.0,
+            texture_path: "atlas/player/apple@jump-sheet_2.png",
+            items: 13,
+            column_size: 10,
+        ),
+        DeserializedPlayerSpriteInfo(
+            sprite_type: Hurt,
+            width: 34.0,
+            height: 32.0,
+            texture_path: "atlas/player/apple@hurt-sheet.png",
+            items: 8,
+            column_size: 8,
+        ),
+        DeserializedPlayerSpriteInfo(
+            sprite_type: Death,
+            width: 42.0,
+            height: 42.0,
+            texture_path: "atlas/player/apple@death-sheet_2.png",
+            items: 36,
+            column_size: 10,
+        ),
+    ],
+    enemies: [
+        DeserializedEnemySpriteInfo(
+            sprite_type: Gray,
+            width: 16.0,
+            height: 16.0,
+            texture_path: "atlas/enemies/gray_monster.png",
+            items: 4,
+            column_size: 4,
+        ),
+        DeserializedEnemySpriteInfo(
+            sprite_type: Long,
+            width: 16.0,
+            height: 16.0,
+            texture_path: "atlas/enemies/long_hair_monster.png",
+            items: 4,
+            column_size: 4,
+        ),
+    ],
+    tutorials: [
+        DeserializedTutorialSpriteInfo(
+            sprite_type: Movement,
+            texture_path: "atlas/tutorial/keyboard_arrows.png",
+        ),
+    ]
+)
