@@ -8,7 +8,7 @@ pub fn build_classic_button() -> ButtonBundle {
     ButtonBundle {
         style: Style {
             size: Size::new(Val::Px(150.0), Val::Px(50.0)),
-            margin: Rect::all(Val::Auto),
+            margin: UiRect::all(Val::Auto),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
             ..Default::default()
@@ -30,14 +30,13 @@ pub fn build_classic_text(
     let button_params = params.unwrap_or(ClassicButtonTextParams { font_size: 20.0 });
 
     TextBundle {
-        text: Text::with_section(
+        text: Text::from_section(
             value,
             TextStyle {
                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                 font_size: button_params.font_size,
                 color: Color::WHITE,
             },
-            Default::default(),
         ),
         ..Default::default()
     }

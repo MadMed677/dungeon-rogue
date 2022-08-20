@@ -168,6 +168,7 @@ impl GameTextures {
                 texture.column_size,
                 (texture.items as f32 / texture.column_size as f32).ceil() as usize,
                 Vec2::new(64.0 - texture.width, 64.0 - texture.height),
+                Vec2::ZERO,
             );
 
             let sprite_asset_info = SpriteAssetInfo {
@@ -235,6 +236,7 @@ impl GameTextures {
                 texture.column_size,
                 texture.items / texture.column_size,
                 Vec2::new(0.0, 0.0),
+                Vec2::ZERO,
             );
 
             let sprite_asset_info = SpriteAssetInfo {

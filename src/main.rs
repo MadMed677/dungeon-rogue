@@ -143,8 +143,7 @@ pub struct PlayerIsDeadEvent;
 pub struct PlayerIsHitEvent(i32);
 
 fn setup(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(Camera2dBundle::default());
 }
 
 fn main() {

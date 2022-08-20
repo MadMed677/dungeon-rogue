@@ -34,7 +34,7 @@ fn spawn_movement_ui(
         .spawn_bundle(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(50.0),
                     top: Val::Px(50.0),
                     ..Default::default()
@@ -61,7 +61,7 @@ fn spawn_movement_ui(
                 })
                 .with_children(|parent| {
                     parent.spawn_bundle(TextBundle {
-                        text: Text::with_section(
+                        text: Text::from_section(
                             match tutorial_type {
                                 TutorialType::Movement => "Movement",
                                 TutorialType::Climbing => "Climbing",
@@ -71,7 +71,6 @@ fn spawn_movement_ui(
                                 font_size: 16.0,
                                 color: Color::WHITE,
                             },
-                            Default::default(),
                         ),
                         ..Default::default()
                     });

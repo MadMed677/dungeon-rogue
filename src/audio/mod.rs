@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_kira_audio::{AudioApp, AudioChannel, AudioPlugin, AudioSource};
+use bevy_kira_audio::prelude::{AudioSource, *};
 use iyes_loopless::prelude::*;
 
 use crate::ron_parsers::Settings;
@@ -49,12 +49,12 @@ fn start_bg_music(
     mut audio_state: ResMut<AudioState>,
 ) {
     if audio_state.state {
-        background_audio.set_volume(audio_state.volume as f32 / 10.0);
+        background_audio.set_volume(audio_state.volume as f64 / 10.0);
 
         match audio_state.bg_state {
             // If the song is stopped or never played before we just need to start it
             BackgroundMusicState::Stopped => {
-                background_audio.play_looped(audio_state.bg_handle.clone());
+                background_audio.play(audio_state.bg_handle.clone());
                 audio_state.bg_state = BackgroundMusicState::Playing;
             }
 
