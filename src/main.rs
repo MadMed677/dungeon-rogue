@@ -17,7 +17,7 @@ mod ui;
 
 use std::collections::HashSet;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::texture::ImageSettings};
 use iyes_loopless::prelude::*;
 
 use audio::GameAudioPlugin;
@@ -156,6 +156,7 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
+        .insert_resource(ImageSettings::default_nearest())
         .add_loopless_state(ApplicationState::Menu(ApplicationStateMenu::Main))
         .add_loopless_state(PlayerAnimationState::Idle)
         .add_event::<PauseTheGameEvent>()
