@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.11] - 2022-08-20
+
+### Changed
+- Upgrade to `bevy@0.8` and all related dependencies 
+- Update `offsets` for player animations to make it more consistent
+
+---
+
 ## [0.1.10] - 2022-08-15
 | Animation | Animation name |
 | ------------------ | ------------ |
