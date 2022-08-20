@@ -62,7 +62,7 @@ fn setup(
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
-pub enum DeserializedPlayerType {
+enum DeserializedPlayerType {
     Idle,
     Run,
     Climb,
@@ -72,18 +72,18 @@ pub enum DeserializedPlayerType {
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
-pub enum DeserializedEnemyType {
+enum DeserializedEnemyType {
     Gray,
     Long,
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
-pub enum DeserializedTutorialType {
+enum DeserializedTutorialType {
     Movement,
 }
 
 #[derive(Clone, Deserialize, Debug)]
-pub struct DeserializedPlayerSpriteInfo {
+struct DeserializedPlayerSpriteInfo {
     pub sprite_type: DeserializedPlayerType,
     pub width: f32,
     pub height: f32,
@@ -93,7 +93,7 @@ pub struct DeserializedPlayerSpriteInfo {
 }
 
 #[derive(Clone, Deserialize, Debug)]
-pub struct DeserializedEnemySpriteInfo {
+struct DeserializedEnemySpriteInfo {
     pub sprite_type: DeserializedEnemyType,
     pub width: f32,
     pub height: f32,
@@ -103,13 +103,13 @@ pub struct DeserializedEnemySpriteInfo {
 }
 
 #[derive(Clone, Deserialize, Debug)]
-pub struct DeserializedTutorialSpriteInfo {
+struct DeserializedTutorialSpriteInfo {
     pub sprite_type: DeserializedTutorialType,
     pub texture_path: String,
 }
 
 #[derive(Clone, Deserialize, Debug)]
-pub struct DeserializedGameTextures {
+struct DeserializedGameTextures {
     pub player: Vec<DeserializedPlayerSpriteInfo>,
     pub enemies: Vec<DeserializedEnemySpriteInfo>,
     pub tutorials: Vec<DeserializedTutorialSpriteInfo>,
@@ -131,7 +131,7 @@ pub struct GameTextures {
 }
 
 impl GameTextures {
-    pub fn new(
+    fn new(
         deserialized_textures: &DeserializedGameTextures,
         asset_server: Res<AssetServer>,
         mut texture_atlases: ResMut<Assets<TextureAtlas>>,
