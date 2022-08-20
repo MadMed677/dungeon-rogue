@@ -136,8 +136,23 @@ impl GameTextures {
         asset_server: Res<AssetServer>,
         mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     ) -> Self {
-        // Player
+        let texture_alias = &mut texture_atlases;
         let player_textures = &deserialized_textures.player;
+        let enemy_textures = &deserialized_textures.enemies;
+        let tutorial_textures = &deserialized_textures.tutorials;
+
+        Self {
+            player: Self::prepare_player_textures(player_textures, &asset_server, texture_alias),
+            enemies: Self::prepare_enemies_textures(enemy_textures, &asset_server, texture_alias),
+            tutorials: Self::prepare_tutorial_textures(tutorial_textures, &asset_server),
+        }
+    }
+
+    fn prepare_player_textures(
+        player_textures: &[DeserializedPlayerSpriteInfo],
+        asset_server: &Res<AssetServer>,
+        texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+    ) -> PlayerSprites {
         let mut idle = None;
         let mut run = None;
         let mut climb = None;
@@ -183,8 +198,32 @@ impl GameTextures {
             }
         }
 
-        // Enemies
-        let enemy_textures = &deserialized_textures.enemies;
+        // Check the player
+        if idle.is_none()
+            || run.is_none()
+            || climb.is_none()
+            || jump.is_none()
+            || hurt.is_none()
+            || death.is_none()
+        {
+            panic!("All animations for the player must be mapped");
+        }
+
+        PlayerSprites {
+            idle: idle.unwrap(),
+            run: run.unwrap(),
+            climb: climb.unwrap(),
+            jump: jump.unwrap(),
+            hurt: hurt.unwrap(),
+            death: death.unwrap(),
+        }
+    }
+
+    fn prepare_enemies_textures(
+        enemy_textures: &[DeserializedEnemySpriteInfo],
+        asset_server: &Res<AssetServer>,
+        texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+    ) -> EnemiesSprites {
         let mut gray = None;
         let mut long = None;
 
@@ -214,8 +253,21 @@ impl GameTextures {
             }
         }
 
-        let tutorial_textures = &deserialized_textures.tutorials;
-        let mut movement = None;
+        if gray.is_none() || long.is_none() {
+            panic!("All enemies animations must be mapped");
+        }
+
+        EnemiesSprites {
+            gray: gray.unwrap(),
+            long: long.unwrap(),
+        }
+    }
+
+    fn prepare_tutorial_textures(
+        tutorial_textures: &[DeserializedTutorialSpriteInfo],
+        asset_server: &Res<AssetServer>,
+    ) -> TutorialSprites {
+        let mut movement: Option<Handle<Image>> = None;
 
         for texture in tutorial_textures.iter() {
             let tutorial_texture = asset_server.load(texture.texture_path.as_str());
@@ -228,35 +280,12 @@ impl GameTextures {
         }
 
         // Check the player
-        if idle.is_none()
-            || run.is_none()
-            || climb.is_none()
-            || jump.is_none()
-            || hurt.is_none()
-            || death.is_none()
-            || gray.is_none()
-            || long.is_none()
-            || movement.is_none()
-        {
+        if movement.is_none() {
             panic!("All animations must be mapped");
         }
 
-        Self {
-            player: PlayerSprites {
-                idle: idle.unwrap(),
-                run: run.unwrap(),
-                climb: climb.unwrap(),
-                jump: jump.unwrap(),
-                hurt: hurt.unwrap(),
-                death: death.unwrap(),
-            },
-            enemies: EnemiesSprites {
-                gray: gray.unwrap(),
-                long: long.unwrap(),
-            },
-            tutorials: TutorialSprites {
-                movement: movement.unwrap(),
-            },
+        TutorialSprites {
+            movement: movement.unwrap(),
         }
     }
 }
