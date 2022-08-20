@@ -87,6 +87,7 @@ struct DeserializedPlayerSpriteInfo {
     pub sprite_type: DeserializedPlayerType,
     pub width: f32,
     pub height: f32,
+    pub offset: f32,
     pub texture_path: String,
     pub items: usize,
     pub column_size: usize,
@@ -153,6 +154,8 @@ impl GameTextures {
         asset_server: &Res<AssetServer>,
         texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
     ) -> PlayerSprites {
+        let player_tile_size = 64.0;
+
         let mut idle = None;
         let mut run = None;
         let mut climb = None;
@@ -167,8 +170,12 @@ impl GameTextures {
                 Vec2::new(texture.width, texture.height),
                 texture.column_size,
                 (texture.items as f32 / texture.column_size as f32).ceil() as usize,
-                Vec2::new(64.0 - texture.width, 64.0 - texture.height),
-                Vec2::ZERO,
+                Vec2::new(
+                    player_tile_size - texture.width,
+                    player_tile_size - texture.height,
+                ),
+                Vec2::new(texture.offset, 30.0),
+                // Vec2::new(player_tile_size - texture.width, 30.0),
             );
 
             let sprite_asset_info = SpriteAssetInfo {

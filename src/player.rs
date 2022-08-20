@@ -187,7 +187,7 @@ fn spawn_player(
                 timer: Timer::from_seconds(0.1, true),
             })
             .insert(JumpAnimation {
-                timer: Timer::from_seconds(0.04, true),
+                timer: Timer::from_seconds(0.07, true),
             })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
