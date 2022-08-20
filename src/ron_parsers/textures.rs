@@ -174,7 +174,7 @@ impl GameTextures {
                     player_tile_size - texture.width,
                     player_tile_size - texture.height,
                 ),
-                Vec2::new(texture.offset, 30.0),
+                Vec2::new(texture.offset, player_tile_size - texture.height),
                 // Vec2::new(player_tile_size - texture.width, 30.0),
             );
 
