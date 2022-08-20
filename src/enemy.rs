@@ -5,7 +5,8 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ApplicationState, Health, MovementAnimation, MovementDirection, OnMove, Speed, Sprites,
+    ron_parsers::GameTextures, ApplicationState, Health, MovementAnimation, MovementDirection,
+    OnMove, Speed,
 };
 
 pub struct EnemyPlugin;
@@ -242,13 +243,13 @@ struct EnemyBundle {
 
 fn spawn_enemy(
     mut commands: Commands,
-    materials: Res<Sprites>,
+    materials: Res<GameTextures>,
     enemies_query: Query<(Entity, &Transform, &EnemyType), Added<Enemy>>,
 ) {
     for (enemy, transform, enemy_type) in enemies_query.iter() {
         let enemy_material = match enemy_type {
-            EnemyType::Durt => &materials.monsters.gray,
-            EnemyType::LongHair => &materials.monsters.long,
+            EnemyType::Durt => &materials.enemies.gray,
+            EnemyType::LongHair => &materials.enemies.long,
         };
 
         let sprite_width = enemy_material.width;

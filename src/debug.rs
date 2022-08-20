@@ -1,12 +1,13 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::widgets::{InspectorQuery, InspectorQuerySingle};
+use bevy_inspector_egui::widgets::{InspectorQuery, InspectorQuerySingle, ResourceInspector};
 use bevy_rapier2d::prelude::*;
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
+use iyes_loopless::state::CurrentState;
 
 use crate::enemy::{Enemy, EnemyType, Patrol};
-use crate::player::Player;
+use crate::player::{Player, PlayerAnimationState};
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
 use crate::{Climbable, Health, MovementDirection, OnMove, Speed};
 
@@ -17,6 +18,17 @@ struct Inspector {
     player: InspectorQuerySingle<Entity, With<Player>>,
     tutorials: InspectorQuery<Entity, With<Tutorial>>,
     enemies: InspectorQuery<Entity, With<Enemy>>,
+    player_animation_state: ResourceInspector<DebugPlayerAnimationState>,
+}
+
+#[derive(Inspectable)]
+enum DebugPlayerAnimationState {
+    Idle,
+    Run,
+    Climb,
+    Hit,
+    Death,
+    Jump,
 }
 
 impl Plugin for DebugPlugin {
@@ -26,6 +38,7 @@ impl Plugin for DebugPlugin {
 
         if cfg!(feature = "debug") {
             app.add_plugin(InspectorPlugin::<Inspector>::new())
+                .insert_resource(DebugPlayerAnimationState::Idle)
                 .register_inspectable::<Player>()
                 .register_inspectable::<Speed>()
                 .register_inspectable::<Name>()
@@ -40,9 +53,38 @@ impl Plugin for DebugPlugin {
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())
                 .add_system_to_stage(DEBUG, debug_collisions)
                 .add_system_to_stage(DEBUG, update_debug_collisions)
+                .add_system(debug_state)
                 .add_plugin(LogDiagnosticsPlugin::default())
                 .add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_plugin(RapierDebugRenderPlugin::default());
+        }
+    }
+}
+
+fn debug_state(
+    player_animation_state: Res<CurrentState<PlayerAnimationState>>,
+    mut debug_player_animation_state: ResMut<DebugPlayerAnimationState>,
+) {
+    if player_animation_state.is_changed() {
+        match player_animation_state.0 {
+            PlayerAnimationState::Idle => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Idle;
+            }
+            PlayerAnimationState::Run => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Run;
+            }
+            PlayerAnimationState::Climb => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Climb;
+            }
+            PlayerAnimationState::Hit(_) => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Hit;
+            }
+            PlayerAnimationState::Death(_) => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Death;
+            }
+            PlayerAnimationState::Jump => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Jump;
+            }
         }
     }
 }
