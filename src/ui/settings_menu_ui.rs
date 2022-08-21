@@ -236,7 +236,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, audio_state: Re
                         justify_content: JustifyContent::SpaceBetween,
                         align_content: AlignContent::Center,
                         align_items: AlignItems::Center,
-                        border: Rect::all(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(5.0)),
                         ..Default::default()
                     },
                     color: Color::NONE.into(),
@@ -260,7 +260,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, audio_state: Re
                             parent
                                 .spawn_bundle(NodeBundle {
                                     style: Style {
-                                        margin: Rect::all(Val::Px(30.0)),
+                                        margin: UiRect::all(Val::Px(30.0)),
                                         ..Default::default()
                                     },
                                     color: Color::NONE.into(),

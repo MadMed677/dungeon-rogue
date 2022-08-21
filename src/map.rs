@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use bevy::{prelude::*, render::camera::Camera2d};
+use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
@@ -128,10 +128,10 @@ fn spawn_wall_collision(
     }
     // Store all GridCoords by specific level
     let mut level_to_wall_locations: HashMap<Entity, HashSet<GridCoords>> = HashMap::new();
-    for (&grid_coords, &Parent(parent)) in wall_query.iter() {
-        if let Ok(&Parent(level_entity)) = parent_query.get(parent) {
+    for (&grid_coords, parent) in wall_query.iter() {
+        if let Ok(level_entity) = parent_query.get(parent.get()) {
             std::collections::hash_map::Entry::or_insert(
-                level_to_wall_locations.entry(level_entity),
+                level_to_wall_locations.entry(level_entity.get()),
                 HashSet::new(),
             )
             .insert(grid_coords);
@@ -184,21 +184,21 @@ fn spawn_wall_collision(
                 }
 
                 // combine "plates" into rectangles across multiple rows
-                let mut wall_rects: Vec<Rect<i32>> = Vec::new();
-                let mut previous_rects: HashMap<Plate, Rect<i32>> = HashMap::new();
+                let mut wall_rects: Vec<UiRect<i32>> = Vec::new();
+                let mut previous_rects: HashMap<Plate, UiRect<i32>> = HashMap::new();
 
                 // an extra empty row so the algorithm "terminates" the rects that
                 // touch the top edge
                 plate_stack.push(Vec::new());
 
                 for (y, row) in plate_stack.iter().enumerate() {
-                    let mut current_rects: HashMap<Plate, Rect<i32>> = HashMap::new();
+                    let mut current_rects: HashMap<Plate, UiRect<i32>> = HashMap::new();
 
                     for plate in row {
                         if let Some(previous_rect) = previous_rects.remove(plate) {
                             current_rects.insert(
                                 *plate,
-                                Rect {
+                                UiRect {
                                     top: previous_rect.top + 1,
                                     ..previous_rect
                                 },
@@ -206,7 +206,7 @@ fn spawn_wall_collision(
                         } else {
                             current_rects.insert(
                                 *plate,
-                                Rect {
+                                UiRect {
                                     top: y as i32,
                                     bottom: y as i32,
                                     left: plate.left,
@@ -224,23 +224,24 @@ fn spawn_wall_collision(
                     let x = (wall_rect.left + wall_rect.right + 1) as f32 * grid_size as f32 / 2.0;
                     let y = (wall_rect.bottom + wall_rect.top + 1) as f32 * grid_size as f32 / 2.0;
 
-                    commands
-                        .spawn()
-                        .insert(Collider::cuboid(
-                            (wall_rect.right as f32 - wall_rect.left as f32 + 1.0)
-                                * grid_size as f32
-                                / 2.0,
-                            (wall_rect.top as f32 - wall_rect.bottom as f32 + 1.0)
-                                * grid_size as f32
-                                / 2.0,
-                        ))
-                        .insert(RigidBody::Fixed)
-                        .insert(Friction::new(0.1))
-                        .insert(Transform::from_xyz(x, y, 0.0))
-                        .insert(GlobalTransform::default())
-                        .insert(WallCollision)
-                        .insert(CollisionGroups::new(0b1101, 0b0100))
-                        .insert(Parent(level_entity));
+                    commands.entity(level_entity).with_children(|level| {
+                        level
+                            .spawn()
+                            .insert(Collider::cuboid(
+                                (wall_rect.right as f32 - wall_rect.left as f32 + 1.0)
+                                    * grid_size as f32
+                                    / 2.0,
+                                (wall_rect.top as f32 - wall_rect.bottom as f32 + 1.0)
+                                    * grid_size as f32
+                                    / 2.0,
+                            ))
+                            .insert(RigidBody::Fixed)
+                            .insert(Friction::new(0.1))
+                            .insert(Transform::from_xyz(x, y, 0.0))
+                            .insert(GlobalTransform::default())
+                            .insert(WallCollision)
+                            .insert(CollisionGroups::new(0b1101, 0b0100));
+                    });
                 }
             }
         }
@@ -258,7 +259,7 @@ fn update_level_selection(
 ) {
     for (level_handle, level_transform) in level_query.iter() {
         if let Some(ldtk_level) = ldtk_levels.get(level_handle) {
-            let level_bounds = Rect {
+            let level_bounds = UiRect {
                 bottom: level_transform.translation.y,
                 top: level_transform.translation.y + ldtk_level.level.px_hei as f32,
                 left: level_transform.translation.x,

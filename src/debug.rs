@@ -101,6 +101,7 @@ fn debug_collisions(
     if let Ok((player_entity, player_collider, player_transform)) = player_collider.get_single() {
         let half_sizes = player_collider.as_cuboid().unwrap().half_extents();
         let full_sizes = half_sizes * 2.0;
+        let (player_scale, player_rotation, _) = player_transform.to_scale_rotation_translation();
 
         // Add Debug Player layer as a children of the player itself
         commands.entity(player_entity).with_children(|parent| {
@@ -113,8 +114,8 @@ fn debug_collisions(
                 transform: Transform {
                     // Create relative coordinates for the player
                     translation: Vec3::new(0.0, 0.0, 20.0),
-                    rotation: player_transform.rotation,
-                    scale: player_transform.scale,
+                    rotation: player_rotation,
+                    scale: player_scale,
                 },
                 ..Default::default()
             });
@@ -144,6 +145,8 @@ fn debug_collisions(
     for (climbable_entity, climbable_collider, climbable_transform) in climbables_collider.iter() {
         let half_sizes = climbable_collider.as_cuboid().unwrap().half_extents();
         let full_sizes = half_sizes * 2.0;
+        let (climbable_scale, climbable_rotation, _) =
+            climbable_transform.to_scale_rotation_translation();
 
         commands.entity(climbable_entity).with_children(|parent| {
             parent.spawn_bundle(SpriteBundle {
@@ -154,8 +157,8 @@ fn debug_collisions(
                 },
                 transform: Transform {
                     translation: Vec3::new(0.0, 0.0, 20.0),
-                    rotation: climbable_transform.rotation,
-                    scale: climbable_transform.scale,
+                    rotation: climbable_rotation,
+                    scale: climbable_scale,
                 },
                 ..Default::default()
             });

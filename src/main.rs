@@ -17,7 +17,7 @@ mod ui;
 
 use std::collections::HashSet;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::texture::ImageSettings};
 use iyes_loopless::prelude::*;
 
 use audio::GameAudioPlugin;
@@ -143,8 +143,7 @@ pub struct PlayerIsDeadEvent;
 pub struct PlayerIsHitEvent(i32);
 
 fn setup(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(Camera2dBundle::default());
 }
 
 fn main() {
@@ -157,6 +156,7 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
+        .insert_resource(ImageSettings::default_nearest())
         .add_loopless_state(ApplicationState::Menu(ApplicationStateMenu::Main))
         .add_loopless_state(PlayerAnimationState::Idle)
         .add_event::<PauseTheGameEvent>()

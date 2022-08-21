@@ -79,8 +79,8 @@ fn combat_interaction_detection(
                             .expect("Enemy collider must be cuboid")
                             .half_extents();
 
-                        if ((player_transform.translation.y - player_half_size.y)
-                            - (enemy_transform.translation.y + enemy_half_size.y))
+                        if ((player_transform.translation().y - player_half_size.y)
+                            - (enemy_transform.translation().y + enemy_half_size.y))
                             < -3.0
                         {
                             hit_the_player_event.send(PlayerIsHitEvent(1));
@@ -89,7 +89,7 @@ fn combat_interaction_detection(
                         }
 
                         // We should push player on left - otherwise - on right
-                        if player_transform.translation.x < enemy_transform.translation.x {
+                        if player_transform.translation().x < enemy_transform.translation().x {
                             player_impulse.impulse =
                                 Vec2::new(-impulse_force_horizontal, impulse_force_vertical);
                             enemy_impulse.impulse =

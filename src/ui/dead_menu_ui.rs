@@ -53,7 +53,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         size: Size::new(Val::Percent(50.0), Val::Percent(95.0)),
                         flex_direction: FlexDirection::ColumnReverse,
                         justify_content: JustifyContent::SpaceBetween,
-                        border: Rect::all(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(5.0)),
                         align_content: AlignContent::Center,
                         ..Default::default()
                     },
@@ -86,7 +86,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             style: Style {
                                 size: Size::new(Val::Percent(100.0), Val::Percent(70.0)),
                                 flex_direction: FlexDirection::ColumnReverse,
-                                border: Rect::all(Val::Px(5.0)),
+                                border: UiRect::all(Val::Px(5.0)),
                                 ..Default::default()
                             },
                             color: Color::NONE.into(),
