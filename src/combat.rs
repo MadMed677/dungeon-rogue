@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{enemy::Enemy, player::Player, ApplicationState, Attacks, Health, PlayerIsHitEvent};
+use crate::{
+    enemy::Enemy,
+    player::{Player, SideDetector, SideSensor},
+    ApplicationState, Attackable, Attacks, Health, PlayerIsHitEvent,
+};
 
 pub struct CombatPlugin;
 
@@ -14,8 +18,77 @@ impl Plugin for CombatPlugin {
                 .with_system(combat_interaction_detection)
                 .with_system(player_receives_damage)
                 .with_system(player_attacks)
+                .with_system(attack_detection)
                 .into(),
         );
+    }
+}
+
+fn attack_detection(
+    side_detectors: Query<(&Attacks, &GlobalTransform), With<SideDetector>>,
+    side_sensors: Query<(Entity, &SideSensor)>,
+    mut collisions: EventReader<CollisionEvent>,
+    mut attackable_query: Query<
+        (&mut Health, &mut ExternalImpulse, &GlobalTransform),
+        With<Attackable>,
+    >,
+) {
+    for (side_sensor_entity, side_sensor) in side_sensors.iter() {
+        for collision in collisions.iter() {
+            match collision {
+                CollisionEvent::Started(collision_a, collision_b, _) => {
+                    let offset_x = 50.0;
+                    let offset_y = 30.0;
+
+                    let attacker = if let Ok(pl1) = side_detectors.get(side_sensor.detection_entity)
+                    {
+                        Some(pl1)
+                    } else {
+                        None
+                    };
+
+                    let attackable = if *collision_b == side_sensor_entity {
+                        if let Ok(x) = attackable_query.get_mut(*collision_a) {
+                            Some(x)
+                        } else {
+                            None
+                        }
+                    } else if *collision_a == side_sensor_entity {
+                        if let Ok(x) = attackable_query.get_mut(*collision_b) {
+                            Some(x)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+
+                    if let Some((attacks, attacker_transform)) = attacker {
+                        if let Some((
+                            mut attackable_health,
+                            mut attackable_impulse,
+                            attackable_transform,
+                        )) = attackable
+                        {
+                            if attacks.0 {
+                                attackable_health.current -= 1;
+
+                                // Give an impulse to the left or right depending on
+                                //  where is the attacker and where is an attackable entity
+                                if attacker_transform.translation().x
+                                    < attackable_transform.translation().x
+                                {
+                                    attackable_impulse.impulse = Vec2::new(offset_x, offset_y);
+                                } else {
+                                    attackable_impulse.impulse = Vec2::new(-offset_x, offset_y);
+                                }
+                            }
+                        }
+                    }
+                }
+                CollisionEvent::Stopped(_, _, _) => {}
+            }
+        }
     }
 }
 

@@ -5,6 +5,7 @@ mod combat;
 mod debug;
 mod enemy;
 mod hud;
+mod interaction_groups;
 mod ldtk;
 mod map;
 mod out_of_bounce;
@@ -61,7 +62,6 @@ pub struct AttackAnimation {
 #[derive(Component)]
 pub struct MovementAnimation {
     timer: Timer,
-    index: usize,
 }
 
 #[derive(Component)]
@@ -125,6 +125,10 @@ enum ApplicationState {
 /// Otherwise - no
 #[derive(Debug, Component, Inspectable)]
 pub struct Attacks(bool);
+
+/// Describes that this entity might have receive `Attacks`
+#[derive(Debug, Component, Inspectable)]
+pub struct Attackable;
 
 /// Describes all states for a menu
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
