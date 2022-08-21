@@ -7,10 +7,10 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    interaction_groups::ATTACK_COLLISION_GROUP, ron_parsers::GameTextures, ApplicationState,
-    AttackAnimation, Attackable, Attacks, ClimbAnimation, Climbable, Climber, DeathAnimation,
-    Health, HurtAnimation, IdleAnimation, JumpAnimation, MovementAnimation, MovementDirection,
-    OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
+    ron_parsers::GameTextures, ApplicationState, AttackAnimation, Attackable, Attacks,
+    ClimbAnimation, Climbable, Climber, DeathAnimation, Health, HurtAnimation, IdleAnimation,
+    JumpAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
+    PlayerIsHitEvent, Speed,
 };
 
 #[derive(Component, Default, Inspectable)]
@@ -707,10 +707,8 @@ fn spawn_side_sensor(
                     .spawn()
                     .insert(Sensor)
                     .insert(detector_shape.clone())
-                    // .insert(Transform::from_translation(sensor_translation))
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(ColliderMassProperties::Density(0.0))
-                    .insert(ATTACK_COLLISION_GROUP)
                     .insert(SideSensor {
                         detection_entity: entity,
                         intersecting_entities: HashSet::new(),

@@ -5,8 +5,8 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    interaction_groups::ATTACK_COLLISION_GROUP, ron_parsers::GameTextures, ApplicationState,
-    Attackable, Health, MovementAnimation, MovementDirection, OnMove, Speed,
+    ron_parsers::GameTextures, ApplicationState, Attackable, Health, MovementAnimation,
+    MovementDirection, OnMove, Speed,
 };
 
 pub struct EnemyPlugin;
@@ -281,7 +281,6 @@ fn spawn_enemy(
             // By default enemy are not on move
             .insert(OnMove(false))
             .insert(Health { current: 2, max: 2 })
-            .insert(ATTACK_COLLISION_GROUP)
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: enemy_material.texture.clone(),
                 // transform: *transform,

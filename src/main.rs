@@ -5,7 +5,6 @@ mod combat;
 mod debug;
 mod enemy;
 mod hud;
-mod interaction_groups;
 mod ldtk;
 mod map;
 mod out_of_bounce;
