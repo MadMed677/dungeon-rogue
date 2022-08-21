@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{enemy::Enemy, player::Player, ApplicationState, Health, PlayerIsHitEvent};
+use crate::{enemy::Enemy, player::Player, ApplicationState, Attacks, Health, PlayerIsHitEvent};
 
 pub struct CombatPlugin;
 
@@ -13,6 +13,7 @@ impl Plugin for CombatPlugin {
                 .run_in_state(ApplicationState::Game)
                 .with_system(combat_interaction_detection)
                 .with_system(player_receives_damage)
+                .with_system(player_attacks)
                 .into(),
         );
     }
@@ -116,6 +117,21 @@ fn player_receives_damage(
         if let Ok(mut player_health) = player_query.get_single_mut() {
             if player_health.current > 0 {
                 player_health.current -= damage.0;
+            }
+        }
+    }
+}
+
+fn player_attacks(
+    mut player_query: Query<&mut Attacks, With<Player>>,
+    keyboard: Res<Input<KeyCode>>,
+) {
+    if keyboard.just_pressed(KeyCode::LShift) {
+        if let Ok(mut attacks) = player_query.get_single_mut() {
+            if attacks.0 {
+                attacks.0 = false;
+            } else {
+                attacks.0 = true;
             }
         }
     }

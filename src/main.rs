@@ -54,6 +54,11 @@ pub struct JumpAnimation {
 }
 
 #[derive(Component)]
+pub struct AttackAnimation {
+    timer: Timer,
+}
+
+#[derive(Component)]
 pub struct MovementAnimation {
     timer: Timer,
     index: usize,
@@ -115,6 +120,11 @@ enum ApplicationState {
     /// Describes that currently a player in the menu
     Menu(ApplicationStateMenu),
 }
+
+/// If `true` than the entity in attack state
+/// Otherwise - no
+#[derive(Debug, Component, Inspectable)]
+pub struct Attacks(bool);
 
 /// Describes all states for a menu
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]

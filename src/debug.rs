@@ -29,6 +29,7 @@ enum DebugPlayerAnimationState {
     Hit,
     Death,
     Jump,
+    Attack,
 }
 
 impl Plugin for DebugPlugin {
@@ -84,6 +85,9 @@ fn debug_state(
             }
             PlayerAnimationState::Jump => {
                 *debug_player_animation_state = DebugPlayerAnimationState::Jump;
+            }
+            PlayerAnimationState::Attack(_) => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Attack;
             }
         }
     }

@@ -7,9 +7,9 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ron_parsers::GameTextures, ApplicationState, ClimbAnimation, Climbable, Climber,
-    DeathAnimation, Health, HurtAnimation, IdleAnimation, JumpAnimation, MovementAnimation,
-    MovementDirection, OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
+    ron_parsers::GameTextures, ApplicationState, AttackAnimation, Attacks, ClimbAnimation,
+    Climbable, Climber, DeathAnimation, Health, HurtAnimation, IdleAnimation, JumpAnimation,
+    MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
 };
 
 #[derive(Debug, Inspectable)]
@@ -51,7 +51,7 @@ pub enum PlayerAnimationState {
     /// Player run
     Run,
 
-    /// Player climb
+    /// Player climbs
     Climb,
 
     /// Player has taken damage but didn't die
@@ -60,8 +60,11 @@ pub enum PlayerAnimationState {
     /// Player died
     Death(PlayerProcessAnimation),
 
-    /// Player jump
+    /// Player jumps
     Jump,
+
+    /// Player attacks
+    Attack(PlayerProcessAnimation),
 }
 
 impl Default for PlayerAnimationState {
@@ -107,6 +110,10 @@ impl Plugin for PlayerPlugin {
                 .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
                 .with_system(player_jump_animation.run_in_state(PlayerAnimationState::Jump))
                 .with_system(
+                    player_attack_animation
+                        .run_in_state(PlayerAnimationState::Attack(PlayerProcessAnimation::Start)),
+                )
+                .with_system(
                     player_hurt_animation
                         .run_in_state(PlayerAnimationState::Hit(PlayerProcessAnimation::Start)),
                 )
@@ -151,6 +158,7 @@ fn spawn_player(
             .insert(LockedAxes::ROTATION_LOCKED)
             .insert(GravityScale(3.0))
             .insert(ColliderMassProperties::Density(1.0))
+            .insert(Attacks(false))
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: sprite_asset_info.texture.clone(),
                 // Take the Wordly coordinates to place
@@ -189,6 +197,9 @@ fn spawn_player(
             .insert(JumpAnimation {
                 timer: Timer::from_seconds(0.05, true),
             })
+            .insert(AttackAnimation {
+                timer: Timer::from_seconds(0.04, true),
+            })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -218,11 +229,14 @@ fn player_animation_state_processor(
     mut commands: Commands,
     materials: Res<GameTextures>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
-    mut player_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Player>>,
+    mut player_query: Query<
+        (Entity, &Transform, &mut TextureAtlasSprite, &mut Attacks),
+        With<Player>,
+    >,
     death_animation_query: Query<Entity, With<DeathAnimation>>,
 ) {
     if animation_state.is_changed() {
-        if let Ok((entity, transform, mut sprite)) = player_query.get_single_mut() {
+        if let Ok((entity, transform, mut sprite, mut attacks)) = player_query.get_single_mut() {
             sprite.index = 0;
 
             match animation_state.0 {
@@ -256,6 +270,16 @@ fn player_animation_state_processor(
                         .entity(entity)
                         .insert(materials.player.jump.texture.clone());
                 }
+                PlayerAnimationState::Attack(attack_animation) => match attack_animation {
+                    PlayerProcessAnimation::Start => {
+                        commands
+                            .entity(entity)
+                            .insert(materials.player.attack.texture.clone());
+                    }
+                    PlayerProcessAnimation::End => {
+                        attacks.0 = false;
+                    }
+                },
                 PlayerAnimationState::Death(death_animation) => match death_animation {
                     PlayerProcessAnimation::Start => {
                         // Spawn player death animation
@@ -302,11 +326,11 @@ fn player_animation_state_processor(
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
-    mut player_query: Query<(&OnMove, &Climber, &GroundDetection), With<Player>>,
+    mut player_query: Query<(&OnMove, &Climber, &GroundDetection, &Attacks), With<Player>>,
     mut player_hit_event: EventReader<PlayerIsHitEvent>,
     mut player_death_event: EventReader<PlayerIsDeadEvent>,
 ) {
-    if let Ok((on_move, climber, ground_detection)) = player_query.get_single_mut() {
+    if let Ok((on_move, climber, ground_detection, attacks)) = player_query.get_single_mut() {
         if player_death_event.iter().next().is_some() {
             commands.insert_resource(NextState(PlayerAnimationState::Death(
                 PlayerProcessAnimation::Start,
@@ -328,6 +352,18 @@ fn player_animation_processor(
             || player_animation_state.0
                 == PlayerAnimationState::Death(PlayerProcessAnimation::Start)
         {
+            return;
+        }
+
+        if attacks.0 {
+            if player_animation_state.0
+                != PlayerAnimationState::Attack(PlayerProcessAnimation::Start)
+            {
+                commands.insert_resource(NextState(PlayerAnimationState::Attack(
+                    PlayerProcessAnimation::Start,
+                )));
+            }
+
             return;
         }
 
@@ -539,6 +575,30 @@ fn player_jump_animation(
 
             if sprite.index >= 13 {
                 sprite.index = 0;
+            }
+        }
+    }
+}
+
+fn player_attack_animation(
+    mut commands: Commands,
+    time: Res<Time>,
+    materials: Res<GameTextures>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut AttackAnimation), With<Player>>,
+) {
+    let player_materials = &materials.player;
+
+    for (mut sprite, mut attack_animation) in query.iter_mut() {
+        attack_animation.timer.tick(time.delta());
+        if attack_animation.timer.finished() {
+            sprite.index += 1;
+
+            if sprite.index >= player_materials.attack.items {
+                sprite.index = 0;
+
+                commands.insert_resource(NextState(PlayerAnimationState::Attack(
+                    PlayerProcessAnimation::End,
+                )));
             }
         }
     }
