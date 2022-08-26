@@ -106,7 +106,7 @@ impl Plugin for PlayerPlugin {
                         PlayerProcessAnimation::Start,
                     )),
                 )
-                .with_system(player_animation_state_processor)
+                .with_system(player_animation_textures_processor)
                 .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
                 .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
                 .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
@@ -218,7 +218,7 @@ fn spawn_player(
 }
 
 /// Triggers when `animation_state` has changed and update user texture
-fn player_animation_state_processor(
+fn player_animation_textures_processor(
     mut commands: Commands,
     materials: Res<GameTextures>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
@@ -251,10 +251,15 @@ fn player_animation_state_processor(
                 PlayerAnimationState::Hit(hit_animation) => match hit_animation {
                     PlayerProcessAnimation::Start => {
                         commands
-                            .entity(entity)
-                            .insert(materials.player.hurt.texture.clone());
+                        .entity(entity)
+                        .insert(materials.player.hurt.texture.clone());
                     }
                     PlayerProcessAnimation::End => {
+                        // Stop user attack state when user received hit
+                        //  to avoid the problem when the user will attack
+                        //  after hit animation will be stopped
+                        attacks.0 = false;
+
                         commands.insert_resource(NextState(PlayerAnimationState::Idle));
                     }
                 },
@@ -314,7 +319,7 @@ fn player_animation_state_processor(
     }
 }
 
-/// Handle all physical changes and set correct player material texture
+/// Handle all physical changes and set correct player animation state
 #[allow(clippy::type_complexity)]
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
