@@ -37,6 +37,15 @@ DeserializedGameTextures(
             column_size: 10,
         ),
         DeserializedPlayerSpriteInfo(
+            sprite_type: Attack,
+            width: 42.0,
+            height: 32.0,
+            offset: 18.0,
+            texture_path: "atlas/player/apple@attack-sheet.png",
+            items: 8,
+            column_size: 8,
+        ),
+        DeserializedPlayerSpriteInfo(
             sprite_type: Hurt,
             width: 34.0,
             height: 32.0,

@@ -16,6 +16,8 @@ pub struct SpriteAssetInfo {
 
     /// TextureAtlas
     pub texture: Handle<TextureAtlas>,
+
+    pub items: usize,
 }
 
 #[derive(Debug)]
@@ -26,6 +28,7 @@ pub struct PlayerSprites {
     pub hurt: SpriteAssetInfo,
     pub death: SpriteAssetInfo,
     pub jump: SpriteAssetInfo,
+    pub attack: SpriteAssetInfo,
 }
 
 #[derive(Debug)]
@@ -66,6 +69,7 @@ enum DeserializedPlayerType {
     Idle,
     Run,
     Climb,
+    Attack,
     Jump,
     Hurt,
     Death,
@@ -162,6 +166,7 @@ impl GameTextures {
         let mut jump = None;
         let mut hurt = None;
         let mut death = None;
+        let mut attack = None;
 
         for texture in player_textures.iter() {
             let player_texture = asset_server.load(texture.texture_path.as_str());
@@ -175,13 +180,13 @@ impl GameTextures {
                     player_tile_size - texture.height,
                 ),
                 Vec2::new(texture.offset, player_tile_size - texture.height),
-                // Vec2::new(player_tile_size - texture.width, 30.0),
             );
 
             let sprite_asset_info = SpriteAssetInfo {
                 width: texture.width,
                 height: texture.height,
                 texture: texture_atlases.add(player_atlas),
+                items: texture.items,
             };
 
             match texture.sprite_type {
@@ -203,6 +208,9 @@ impl GameTextures {
                 DeserializedPlayerType::Death => {
                     death = Some(sprite_asset_info);
                 }
+                DeserializedPlayerType::Attack => {
+                    attack = Some(sprite_asset_info);
+                }
             }
         }
 
@@ -213,6 +221,7 @@ impl GameTextures {
             || jump.is_none()
             || hurt.is_none()
             || death.is_none()
+            || attack.is_none()
         {
             panic!("All animations for the player must be mapped");
         }
@@ -224,6 +233,7 @@ impl GameTextures {
             jump: jump.unwrap(),
             hurt: hurt.unwrap(),
             death: death.unwrap(),
+            attack: attack.unwrap(),
         }
     }
 
@@ -250,6 +260,7 @@ impl GameTextures {
                 width: texture.width,
                 height: texture.height,
                 texture: texture_atlases.add(enemy_atlas),
+                items: texture.items,
             };
 
             match texture.sprite_type {

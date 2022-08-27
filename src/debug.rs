@@ -9,7 +9,7 @@ use iyes_loopless::state::CurrentState;
 use crate::enemy::{Enemy, EnemyType, Patrol};
 use crate::player::{Player, PlayerAnimationState};
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
-use crate::{Climbable, Health, MovementDirection, OnMove, Speed};
+use crate::{Attacks, Climbable, Health, MovementDirection, OnMove, Speed};
 
 pub struct DebugPlugin;
 
@@ -29,6 +29,7 @@ enum DebugPlayerAnimationState {
     Hit,
     Death,
     Jump,
+    Attack,
 }
 
 impl Plugin for DebugPlugin {
@@ -46,6 +47,7 @@ impl Plugin for DebugPlugin {
                 .register_inspectable::<TutorialType>()
                 .register_inspectable::<MovementDirection>()
                 .register_inspectable::<OnMove>()
+                .register_inspectable::<Attacks>()
                 .register_inspectable::<EnemyType>()
                 .register_inspectable::<Patrol>()
                 .register_inspectable::<Health>()
@@ -84,6 +86,9 @@ fn debug_state(
             }
             PlayerAnimationState::Jump => {
                 *debug_player_animation_state = DebugPlayerAnimationState::Jump;
+            }
+            PlayerAnimationState::Attack(_) => {
+                *debug_player_animation_state = DebugPlayerAnimationState::Attack;
             }
         }
     }

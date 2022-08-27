@@ -13,31 +13,43 @@ pub fn prepare_sprites() -> GameTextures {
             idle: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
             run: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
             climb: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
             hurt: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
             death: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
             jump: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
+                texture: Handle::default(),
+            },
+            attack: SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
         },
@@ -45,11 +57,13 @@ pub fn prepare_sprites() -> GameTextures {
             gray: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
             long: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
+                items: 10,
                 texture: Handle::default(),
             },
         },

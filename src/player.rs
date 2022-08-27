@@ -7,20 +7,11 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ron_parsers::GameTextures, ApplicationState, ClimbAnimation, Climbable, Climber,
-    DeathAnimation, Health, HurtAnimation, IdleAnimation, JumpAnimation, MovementAnimation,
-    MovementDirection, OnMove, PlayerIsDeadEvent, PlayerIsHitEvent, Speed,
+    ron_parsers::GameTextures, ApplicationState, AttackAnimation, Attackable, Attacks,
+    ClimbAnimation, Climbable, Climber, DeathAnimation, Health, HurtAnimation, IdleAnimation,
+    JumpAnimation, MovementAnimation, MovementDirection, OnMove, PlayerIsDeadEvent,
+    PlayerIsHitEvent, Speed,
 };
-
-#[derive(Debug, Inspectable)]
-enum PlayerNames {
-    Pumpkin,
-    Dragon,
-    Apple,
-}
-
-#[derive(Component, Debug, Inspectable)]
-struct PlayerName(PlayerNames);
 
 #[derive(Component, Default, Inspectable)]
 pub struct Player;
@@ -28,6 +19,11 @@ pub struct Player;
 #[derive(Component, Debug, Inspectable)]
 struct GroundDetection {
     pub on_ground: bool,
+}
+
+#[derive(Component, Debug, Inspectable)]
+pub struct SideDetector {
+    pub on_side: bool,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
@@ -51,7 +47,7 @@ pub enum PlayerAnimationState {
     /// Player run
     Run,
 
-    /// Player climb
+    /// Player climbs
     Climb,
 
     /// Player has taken damage but didn't die
@@ -60,8 +56,11 @@ pub enum PlayerAnimationState {
     /// Player died
     Death(PlayerProcessAnimation),
 
-    /// Player jump
+    /// Player jumps
     Jump,
+
+    /// Player attacks
+    Attack(PlayerProcessAnimation),
 }
 
 impl Default for PlayerAnimationState {
@@ -72,8 +71,14 @@ impl Default for PlayerAnimationState {
 
 #[derive(Component)]
 struct GroundSensor {
-    pub ground_detection_entity: Entity,
-    pub intersecting_ground_entities: HashSet<Entity>,
+    pub detection_entity: Entity,
+    pub intersecting_entities: HashSet<Entity>,
+}
+
+#[derive(Component)]
+pub struct SideSensor {
+    pub detection_entity: Entity,
+    pub intersecting_entities: HashSet<Entity>,
 }
 
 #[derive(Bundle, LdtkEntity)]
@@ -101,11 +106,15 @@ impl Plugin for PlayerPlugin {
                         PlayerProcessAnimation::Start,
                     )),
                 )
-                .with_system(player_animation_state_processor)
+                .with_system(player_animation_textures_processor)
                 .with_system(player_idle_animation.run_in_state(PlayerAnimationState::Idle))
                 .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
                 .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
                 .with_system(player_jump_animation.run_in_state(PlayerAnimationState::Jump))
+                .with_system(
+                    player_attack_animation
+                        .run_in_state(PlayerAnimationState::Attack(PlayerProcessAnimation::Start)),
+                )
                 .with_system(
                     player_hurt_animation
                         .run_in_state(PlayerAnimationState::Hit(PlayerProcessAnimation::Start)),
@@ -118,8 +127,8 @@ impl Plugin for PlayerPlugin {
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(spawn_ground_sensor)
+                .with_system(spawn_side_sensor)
                 .with_system(ground_detection)
-                .with_system(test_death_animation)
                 .with_system(dead)
                 .into(),
         )
@@ -151,6 +160,8 @@ fn spawn_player(
             .insert(LockedAxes::ROTATION_LOCKED)
             .insert(GravityScale(3.0))
             .insert(ColliderMassProperties::Density(1.0))
+            .insert(Attacks(false))
+            .insert(Attackable)
             .insert_bundle(SpriteSheetBundle {
                 texture_atlas: sprite_asset_info.texture.clone(),
                 // Take the Wordly coordinates to place
@@ -170,14 +181,12 @@ fn spawn_player(
                 },
                 ..Default::default()
             })
-            .insert(PlayerName(PlayerNames::Apple))
             .insert(player_direction)
             .insert(IdleAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
             .insert(MovementAnimation {
                 timer: Timer::from_seconds(0.1, true),
-                index: 0,
             })
             .insert(ClimbAnimation {
                 timer: Timer::from_seconds(0.15, true),
@@ -189,6 +198,9 @@ fn spawn_player(
             .insert(JumpAnimation {
                 timer: Timer::from_seconds(0.05, true),
             })
+            .insert(AttackAnimation {
+                timer: Timer::from_seconds(0.04, true),
+            })
             .insert(OnMove(false))
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
@@ -196,6 +208,7 @@ fn spawn_player(
                 climbing: false,
             })
             .insert(GroundDetection { on_ground: false })
+            .insert(SideDetector { on_side: false })
             .insert(Health {
                 current: 10,
                 max: 10,
@@ -204,25 +217,19 @@ fn spawn_player(
     }
 }
 
-fn test_death_animation(
-    keyboard: Res<Input<KeyCode>>,
-    mut player_death_event: EventWriter<PlayerIsDeadEvent>,
-) {
-    if keyboard.just_pressed(KeyCode::D) {
-        player_death_event.send(PlayerIsDeadEvent);
-    }
-}
-
 /// Triggers when `animation_state` has changed and update user texture
-fn player_animation_state_processor(
+fn player_animation_textures_processor(
     mut commands: Commands,
     materials: Res<GameTextures>,
     animation_state: Res<CurrentState<PlayerAnimationState>>,
-    mut player_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Player>>,
+    mut player_query: Query<
+        (Entity, &Transform, &mut TextureAtlasSprite, &mut Attacks),
+        With<Player>,
+    >,
     death_animation_query: Query<Entity, With<DeathAnimation>>,
 ) {
     if animation_state.is_changed() {
-        if let Ok((entity, transform, mut sprite)) = player_query.get_single_mut() {
+        if let Ok((entity, transform, mut sprite, mut attacks)) = player_query.get_single_mut() {
             sprite.index = 0;
 
             match animation_state.0 {
@@ -248,6 +255,11 @@ fn player_animation_state_processor(
                             .insert(materials.player.hurt.texture.clone());
                     }
                     PlayerProcessAnimation::End => {
+                        // Stop user attack state when user received hit
+                        //  to avoid the problem when the user will attack
+                        //  after hit animation will be stopped
+                        attacks.0 = false;
+
                         commands.insert_resource(NextState(PlayerAnimationState::Idle));
                     }
                 },
@@ -256,6 +268,16 @@ fn player_animation_state_processor(
                         .entity(entity)
                         .insert(materials.player.jump.texture.clone());
                 }
+                PlayerAnimationState::Attack(attack_animation) => match attack_animation {
+                    PlayerProcessAnimation::Start => {
+                        commands
+                            .entity(entity)
+                            .insert(materials.player.attack.texture.clone());
+                    }
+                    PlayerProcessAnimation::End => {
+                        attacks.0 = false;
+                    }
+                },
                 PlayerAnimationState::Death(death_animation) => match death_animation {
                     PlayerProcessAnimation::Start => {
                         // Spawn player death animation
@@ -297,16 +319,16 @@ fn player_animation_state_processor(
     }
 }
 
-/// Handle all physical changes and set correct player material texture
+/// Handle all physical changes and set correct player animation state
 #[allow(clippy::type_complexity)]
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
-    mut player_query: Query<(&OnMove, &Climber, &GroundDetection), With<Player>>,
+    mut player_query: Query<(&OnMove, &Climber, &GroundDetection, &Attacks), With<Player>>,
     mut player_hit_event: EventReader<PlayerIsHitEvent>,
     mut player_death_event: EventReader<PlayerIsDeadEvent>,
 ) {
-    if let Ok((on_move, climber, ground_detection)) = player_query.get_single_mut() {
+    if let Ok((on_move, climber, ground_detection, attacks)) = player_query.get_single_mut() {
         if player_death_event.iter().next().is_some() {
             commands.insert_resource(NextState(PlayerAnimationState::Death(
                 PlayerProcessAnimation::Start,
@@ -328,6 +350,18 @@ fn player_animation_processor(
             || player_animation_state.0
                 == PlayerAnimationState::Death(PlayerProcessAnimation::Start)
         {
+            return;
+        }
+
+        if attacks.0 {
+            if player_animation_state.0
+                != PlayerAnimationState::Attack(PlayerProcessAnimation::Start)
+            {
+                commands.insert_resource(NextState(PlayerAnimationState::Attack(
+                    PlayerProcessAnimation::Start,
+                )));
+            }
+
             return;
         }
 
@@ -498,30 +532,21 @@ fn player_climb_animation(
 }
 
 fn player_run_animation(
-    texture_atlases: Res<Assets<TextureAtlas>>,
     time: Res<Time>,
-    mut query: Query<
-        (
-            &mut TextureAtlasSprite,
-            &Handle<TextureAtlas>,
-            &mut MovementAnimation,
-        ),
-        With<Player>,
-    >,
+    materials: Res<GameTextures>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut MovementAnimation), With<Player>>,
 ) {
-    for (mut sprite, texture_atlas_handle, mut movement_animation) in query.iter_mut() {
+    let player_materials = &materials.player;
+
+    for (mut sprite, mut movement_animation) in query.iter_mut() {
         movement_animation.timer.tick(time.delta());
 
         if movement_animation.timer.finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            sprite.index += 1;
 
-            movement_animation.index += 1;
-
-            if movement_animation.index >= texture_atlas.textures.len() {
-                movement_animation.index = 0;
+            if sprite.index >= player_materials.run.items {
+                sprite.index = 0;
             }
-
-            sprite.index = movement_animation.index;
         }
     }
 }
@@ -539,6 +564,30 @@ fn player_jump_animation(
 
             if sprite.index >= 13 {
                 sprite.index = 0;
+            }
+        }
+    }
+}
+
+fn player_attack_animation(
+    mut commands: Commands,
+    time: Res<Time>,
+    materials: Res<GameTextures>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut AttackAnimation), With<Player>>,
+) {
+    let player_materials = &materials.player;
+
+    for (mut sprite, mut attack_animation) in query.iter_mut() {
+        attack_animation.timer.tick(time.delta());
+        if attack_animation.timer.finished() {
+            sprite.index += 1;
+
+            if sprite.index >= player_materials.attack.items {
+                sprite.index = 0;
+
+                commands.insert_resource(NextState(PlayerAnimationState::Attack(
+                    PlayerProcessAnimation::End,
+                )));
             }
         }
     }
@@ -609,16 +658,20 @@ fn player_death_animation(
     }
 }
 
+/// Spawn a ground sensor under the player
+/// It helps to understand player collision with
+///  the ground / enemies and other entities which
+///  are placed under the current entity
 fn spawn_ground_sensor(
     mut commands: Commands,
-    detect_ground_query: Query<(Entity, &Collider, &Transform), Added<GroundDetection>>,
+    detect_ground_query: Query<(Entity, &Collider), Added<GroundDetection>>,
 ) {
-    for (entity, collider, transform) in detect_ground_query.iter() {
+    for (entity, collider) in detect_ground_query.iter() {
         if let Some(cuboid) = collider.as_cuboid() {
             let half_extents = &cuboid.half_extents();
 
-            let detector_shape = Collider::cuboid(half_extents.x, 2.0);
-            let sensor_translation = Vec3::new(0.0, -half_extents.y, 0.0) / transform.scale;
+            let detector_shape = Collider::cuboid(half_extents.x - 2.0, 2.0);
+            let sensor_translation = Vec3::new(0.0, -half_extents.y, 0.0);
 
             commands.entity(entity).with_children(|parent| {
                 parent
@@ -627,18 +680,76 @@ fn spawn_ground_sensor(
                     .insert(detector_shape)
                     // .insert(detector_shape)
                     .insert(Transform::from_translation(sensor_translation))
-                    .insert(GlobalTransform::default())
                     // We should make the weight of this rigid body as 0 because
                     //  otherwise it will affect the user but we want to make it
                     //  just as trigger for ground detection reaction
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(ColliderMassProperties::Density(0.0))
-                    .insert(CollisionGroups::new(0b1101, 0b0100))
                     .insert(GroundSensor {
-                        ground_detection_entity: entity,
-                        intersecting_ground_entities: HashSet::new(),
+                        detection_entity: entity,
+                        intersecting_entities: HashSet::new(),
                     });
             });
+        }
+    }
+}
+
+/// Spawns a side sensor from the left and right sides of an entity
+fn spawn_side_sensor(
+    mut commands: Commands,
+    detect_side_query: Query<(Entity, &Collider), Added<SideDetector>>,
+) {
+    for (entity, collider) in detect_side_query.iter() {
+        if let Some(cuboid) = collider.as_cuboid() {
+            let half_extents = &cuboid.half_extents();
+
+            // Create one huge side sensor which will be more by `x` axis
+            //  but less by `y` axis
+            let detector_shape = Collider::cuboid(half_extents.x + 4.0, half_extents.y - 3.0);
+
+            commands.entity(entity).with_children(|parent| {
+                parent
+                    .spawn()
+                    .insert(Sensor)
+                    .insert(detector_shape.clone())
+                    .insert(ActiveEvents::COLLISION_EVENTS)
+                    .insert(ColliderMassProperties::Density(0.0))
+                    .insert(SideSensor {
+                        detection_entity: entity,
+                        intersecting_entities: HashSet::new(),
+                    });
+            });
+
+            return;
+
+            // let detector_shape = Collider::cuboid(2.0, half_extents.y);
+
+            // let offset = 3.0;
+            // let sensors_shifts = vec![
+            //     // Spawn first sensor from the left side
+            //     -half_extents.x - offset,
+            //     // Spawn second sensor from the right side
+            //     half_extents.x + offset,
+            // ];
+
+            // for &shift in sensors_shifts.iter() {
+            //     let sensor_translation = Vec3::new(shift, 0.0, 0.0);
+
+            //     commands.entity(entity).with_children(|parent| {
+            //         parent
+            //             .spawn()
+            //             .insert(Sensor)
+            //             .insert(detector_shape.clone())
+            //             .insert(Transform::from_translation(sensor_translation))
+            //             .insert(ActiveEvents::COLLISION_EVENTS)
+            //             .insert(ColliderMassProperties::Density(0.0))
+            //             .insert(ATTACK_COLLISION_GROUP)
+            //             .insert(SideSensor {
+            //                 detection_entity: entity,
+            //                 intersecting_entities: HashSet::new(),
+            //             });
+            //     });
+            // }
         }
     }
 }
@@ -654,24 +765,20 @@ fn ground_detection(
                 CollisionEvent::Started(collision_a, collision_b, _) => {
                     if (*collision_b == ground_sensor_entity)
                         && ground_detectors
-                            .get_mut(ground_sensor.ground_detection_entity)
+                            .get_mut(ground_sensor.detection_entity)
                             .is_ok()
                     {
-                        ground_sensor
-                            .intersecting_ground_entities
-                            .insert(*collision_a);
+                        ground_sensor.intersecting_entities.insert(*collision_a);
 
                         return;
                     }
 
                     if (*collision_a == ground_sensor_entity)
                         && ground_detectors
-                            .get_mut(ground_sensor.ground_detection_entity)
+                            .get_mut(ground_sensor.detection_entity)
                             .is_ok()
                     {
-                        ground_sensor
-                            .intersecting_ground_entities
-                            .insert(*collision_b);
+                        ground_sensor.intersecting_entities.insert(*collision_b);
 
                         return;
                     }
@@ -679,24 +786,20 @@ fn ground_detection(
                 CollisionEvent::Stopped(collision_a, collision_b, _) => {
                     if (*collision_b == ground_sensor_entity)
                         && ground_detectors
-                            .get_mut(ground_sensor.ground_detection_entity)
+                            .get_mut(ground_sensor.detection_entity)
                             .is_ok()
                     {
-                        ground_sensor
-                            .intersecting_ground_entities
-                            .remove(collision_a);
+                        ground_sensor.intersecting_entities.remove(collision_a);
 
                         return;
                     }
 
                     if (*collision_a == ground_sensor_entity)
                         && ground_detectors
-                            .get_mut(ground_sensor.ground_detection_entity)
+                            .get_mut(ground_sensor.detection_entity)
                             .is_ok()
                     {
-                        ground_sensor
-                            .intersecting_ground_entities
-                            .remove(collision_b);
+                        ground_sensor.intersecting_entities.remove(collision_b);
 
                         return;
                     }
@@ -705,9 +808,9 @@ fn ground_detection(
         }
 
         if let Ok((_, mut ground_detection)) =
-            ground_detectors.get_mut(ground_sensor.ground_detection_entity)
+            ground_detectors.get_mut(ground_sensor.detection_entity)
         {
-            let next_on_ground = !ground_sensor.intersecting_ground_entities.is_empty();
+            let next_on_ground = !ground_sensor.intersecting_entities.is_empty();
 
             if ground_detection.on_ground != next_on_ground {
                 ground_detection.on_ground = next_on_ground;
