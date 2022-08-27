@@ -251,8 +251,8 @@ fn player_animation_textures_processor(
                 PlayerAnimationState::Hit(hit_animation) => match hit_animation {
                     PlayerProcessAnimation::Start => {
                         commands
-                        .entity(entity)
-                        .insert(materials.player.hurt.texture.clone());
+                            .entity(entity)
+                            .insert(materials.player.hurt.texture.clone());
                     }
                     PlayerProcessAnimation::End => {
                         // Stop user attack state when user received hit
@@ -670,7 +670,7 @@ fn spawn_ground_sensor(
         if let Some(cuboid) = collider.as_cuboid() {
             let half_extents = &cuboid.half_extents();
 
-            let detector_shape = Collider::cuboid(half_extents.x, 2.0);
+            let detector_shape = Collider::cuboid(half_extents.x - 2.0, 2.0);
             let sensor_translation = Vec3::new(0.0, -half_extents.y, 0.0);
 
             commands.entity(entity).with_children(|parent| {
