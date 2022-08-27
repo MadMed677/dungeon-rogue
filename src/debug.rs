@@ -6,10 +6,10 @@ use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 use iyes_loopless::state::CurrentState;
 
+use crate::common::{Attacks, Climbable, Health, MovementDirection, OnMove, Speed};
 use crate::enemy::{Enemy, EnemyType, Patrol};
 use crate::player::{Player, PlayerAnimationState, SideDetector};
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
-use crate::{Attacks, Climbable, Health, MovementDirection, OnMove, Speed};
 
 pub struct DebugPlugin;
 

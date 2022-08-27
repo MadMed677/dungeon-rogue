@@ -3,11 +3,10 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{
-    ron_parsers::GameTextures, ApplicationState, AttackAnimation, Attacks, ClimbAnimation, Climber,
-    DeathAnimation, HurtAnimation, IdleAnimation, JumpAnimation, MovementAnimation, OnMove,
-    PlayerIsDeadEvent, PlayerIsHitEvent,
+use crate::common::{
+    Attacks, Climber, FastAnimation, LangeAnimation, MediumAnimation, OnMove, XFastAnimation,
 };
+use crate::{ron_parsers::GameTextures, ApplicationState, PlayerIsDeadEvent, PlayerIsHitEvent};
 
 use super::{GroundDetection, Player, SideDetector};
 pub struct PlayerAnimationPlugin;
@@ -99,23 +98,16 @@ fn setup(mut commands: Commands, player_query: Query<Entity, Added<Player>>) {
     if let Ok(player_entity) = player_query.get_single() {
         commands
             .entity(player_entity)
-            .insert(IdleAnimation {
+            .insert(MediumAnimation {
                 timer: Timer::from_seconds(0.1, true),
             })
-            .insert(MovementAnimation {
-                timer: Timer::from_seconds(0.1, true),
-            })
-            .insert(ClimbAnimation {
+            .insert(LangeAnimation {
                 timer: Timer::from_seconds(0.15, true),
-                index: 0,
             })
-            .insert(HurtAnimation {
-                timer: Timer::from_seconds(0.1, true),
-            })
-            .insert(JumpAnimation {
+            .insert(FastAnimation {
                 timer: Timer::from_seconds(0.05, true),
             })
-            .insert(AttackAnimation {
+            .insert(XFastAnimation {
                 timer: Timer::from_seconds(0.04, true),
             });
     }
@@ -130,7 +122,6 @@ fn player_animation_textures_processor(
         (Entity, &Transform, &mut TextureAtlasSprite, &mut Attacks),
         With<Player>,
     >,
-    death_animation_query: Query<Entity, With<DeathAnimation>>,
 ) {
     if animation_state.is_changed() {
         if let Ok((entity, transform, mut sprite, mut attacks)) = player_query.get_single_mut() {
@@ -200,7 +191,7 @@ fn player_animation_textures_processor(
                                 },
                                 ..Default::default()
                             })
-                            .insert(DeathAnimation {
+                            .insert(MediumAnimation {
                                 timer: Timer::from_seconds(0.1, true),
                             });
 
@@ -211,18 +202,6 @@ fn player_animation_textures_processor(
                         unreachable!();
                     }
                 },
-            }
-
-            return;
-        }
-
-        // This match should be only when the Player is destroyed
-        // This is happening only when the Player is dead and
-        //  we removed it from the scene
-        if animation_state.0 == PlayerAnimationState::Death(PlayerProcessAnimation::End) {
-            // We should remove useless sprite
-            if let Ok(death_sprite_entity) = death_animation_query.get_single() {
-                commands.entity(death_sprite_entity).despawn();
             }
         }
     }
@@ -321,14 +300,14 @@ fn player_animation_processor(
 
 fn player_idle_animation(
     time: Res<Time>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut IdleAnimation), With<Player>>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut MediumAnimation), With<Player>>,
 ) {
-    for (mut sprite, mut idle_animation) in query.iter_mut() {
+    for (mut sprite, mut animation) in query.iter_mut() {
         // Do nothing if the player is not in idle
 
-        idle_animation.timer.tick(time.delta());
+        animation.timer.tick(time.delta());
 
-        if idle_animation.timer.finished() {
+        if animation.timer.finished() {
             sprite.index += 1;
 
             // 24 - is a maximum amount of textures for idle state
@@ -342,20 +321,21 @@ fn player_idle_animation(
 
 fn player_climb_animation(
     time: Res<Time>,
-    mut query: Query<(&Velocity, &mut TextureAtlasSprite, &mut ClimbAnimation), With<Player>>,
+    materials: Res<GameTextures>,
+    mut query: Query<(&Velocity, &mut TextureAtlasSprite, &mut LangeAnimation), With<Player>>,
 ) {
-    for (velocity, mut sprite, mut climb_animation) in query.iter_mut() {
-        climb_animation.timer.tick(time.delta());
+    let player_materials = &materials.player;
 
-        if climb_animation.timer.finished() {
-            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+    for (velocity, mut sprite, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
+
+        if animation.timer.finished() {
             let y_velocity = velocity.linvel.y;
 
             #[allow(clippy::manual_range_contains)]
             if y_velocity > 20.0 || y_velocity < -20.0 {
-                climb_animation.index = (climb_animation.index + 1) % 12;
-
-                sprite.index = climb_animation.index;
+                sprite.index += 1;
+                sprite.index = (sprite.index + 1) % player_materials.climb.items;
             }
         }
     }
@@ -364,14 +344,14 @@ fn player_climb_animation(
 fn player_run_animation(
     time: Res<Time>,
     materials: Res<GameTextures>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut MovementAnimation), With<Player>>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut MediumAnimation), With<Player>>,
 ) {
     let player_materials = &materials.player;
 
-    for (mut sprite, mut movement_animation) in query.iter_mut() {
-        movement_animation.timer.tick(time.delta());
+    for (mut sprite, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
 
-        if movement_animation.timer.finished() {
+        if animation.timer.finished() {
             sprite.index += 1;
 
             if sprite.index >= player_materials.run.items {
@@ -384,14 +364,14 @@ fn player_run_animation(
 fn player_wall_slide_animation(
     time: Res<Time>,
     materials: Res<GameTextures>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut IdleAnimation), With<Player>>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut MediumAnimation), With<Player>>,
 ) {
     let player_materials = &materials.player;
 
-    for (mut sprite, mut wall_slide_animation) in query.iter_mut() {
-        wall_slide_animation.timer.tick(time.delta());
+    for (mut sprite, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
 
-        if wall_slide_animation.timer.finished() {
+        if animation.timer.finished() {
             sprite.index += 1;
 
             if sprite.index >= player_materials.wall_slide.items {
@@ -403,11 +383,11 @@ fn player_wall_slide_animation(
 
 fn player_jump_animation(
     time: Res<Time>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut JumpAnimation), With<Player>>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut FastAnimation), With<Player>>,
 ) {
-    for (mut sprite, mut jump_animation) in query.iter_mut() {
-        jump_animation.timer.tick(time.delta());
-        if jump_animation.timer.finished() {
+    for (mut sprite, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
+        if animation.timer.finished() {
             // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
 
             sprite.index += 1;
@@ -423,13 +403,13 @@ fn player_attack_animation(
     mut commands: Commands,
     time: Res<Time>,
     materials: Res<GameTextures>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut AttackAnimation), With<Player>>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut XFastAnimation), With<Player>>,
 ) {
     let player_materials = &materials.player;
 
-    for (mut sprite, mut attack_animation) in query.iter_mut() {
-        attack_animation.timer.tick(time.delta());
-        if attack_animation.timer.finished() {
+    for (mut sprite, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
+        if animation.timer.finished() {
             sprite.index += 1;
 
             if sprite.index >= player_materials.attack.items {
@@ -451,15 +431,15 @@ fn player_hurt_animation(
         (
             &mut TextureAtlasSprite,
             &Handle<TextureAtlas>,
-            &mut HurtAnimation,
+            &mut MediumAnimation,
         ),
         With<Player>,
     >,
 ) {
-    for (mut sprite, texture_atlas_handle, mut hurt_animation) in query.iter_mut() {
-        hurt_animation.timer.tick(time.delta());
+    for (mut sprite, texture_atlas_handle, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
 
-        if hurt_animation.timer.finished() {
+        if animation.timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
 
             sprite.index += 1;
@@ -481,14 +461,14 @@ fn player_death_animation(
     time: Res<Time>,
     mut query: Query<(
         &mut TextureAtlasSprite,
-        &mut DeathAnimation,
+        &mut MediumAnimation,
         &mut Visibility,
     )>,
 ) {
-    for (mut sprite, mut death_animation, mut visibility) in query.iter_mut() {
-        death_animation.timer.tick(time.delta());
+    for (mut sprite, mut animation, mut visibility) in query.iter_mut() {
+        animation.timer.tick(time.delta());
 
-        if death_animation.timer.finished() {
+        if animation.timer.finished() {
             sprite.index += 1;
 
             // Send death state of 1 frome earlier to be able to remove the user

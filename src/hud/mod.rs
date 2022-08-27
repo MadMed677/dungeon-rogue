@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{ApplicationState, Health};
+use crate::{common::Health, ApplicationState};
 
 /// Show the Heads-up Display for the entities who have a Health component
 pub struct HudPlugin;

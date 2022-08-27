@@ -6,9 +6,10 @@ use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{
-    map::WallCollision, ron_parsers::GameTextures, ApplicationState, Attackable, Attacks,
-    Climbable, Climber, Health, MovementDirection, OnMove, PlayerIsDeadEvent, Speed,
+use crate::{map::WallCollision, ron_parsers::GameTextures, ApplicationState, PlayerIsDeadEvent};
+
+use crate::common::{
+    Attackable, Attacks, Climbable, Climber, Health, MovementDirection, OnMove, Speed,
 };
 
 #[derive(Component, Default, Inspectable)]
@@ -458,11 +459,12 @@ fn dead(
 
 #[cfg(test)]
 mod player_tests {
+    use crate::common::{Climber, Health, MovementDirection, Speed};
     use crate::player::player_physics::{player_jump, spawn_player, PlayerBundle};
     use crate::player::GroundDetection;
+    use crate::player::Player;
     use crate::tests::sprites_textures::prepare_sprites;
-    use crate::{player::Player, Speed};
-    use crate::{Climber, Health, MovementDirection, PlayerIsDeadEvent};
+    use crate::PlayerIsDeadEvent;
     use bevy::ecs::event::Events;
     use bevy::prelude::*;
     use bevy_ecs_ldtk::prelude::*;
