@@ -7,8 +7,8 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ron_parsers::GameTextures, ApplicationState, Attackable, Attacks, Climbable, Climber, Health,
-    MovementDirection, OnMove, PlayerIsDeadEvent, Speed,
+    map::WallCollision, ron_parsers::GameTextures, ApplicationState, Attackable, Attacks,
+    Climbable, Climber, Health, MovementDirection, OnMove, PlayerIsDeadEvent, Speed,
 };
 
 #[derive(Component, Default, Inspectable)]
@@ -61,6 +61,7 @@ impl Plugin for PlayerPhysicsPlugin {
                 .with_system(spawn_ground_sensor)
                 .with_system(spawn_side_sensor)
                 .with_system(ground_detection)
+                .with_system(wall_detection)
                 .with_system(dead)
                 .into(),
         )
@@ -286,6 +287,36 @@ fn spawn_side_sensor(
             });
 
             return;
+        }
+    }
+}
+
+fn wall_detection(
+    mut side_detectors: Query<&mut SideDetector>,
+    side_sensors: Query<(Entity, &SideSensor)>,
+    mut collisions: EventReader<CollisionEvent>,
+    walls_query: Query<Entity, With<WallCollision>>,
+) {
+    for (sensor_entity, sensor) in side_sensors.iter() {
+        for collision in collisions.iter() {
+            match collision {
+                CollisionEvent::Started(collision_a, collision_b, _) => {
+                    if *collision_b == sensor_entity && walls_query.get(*collision_a).is_ok() {
+                        if let Ok(mut detector) = side_detectors.get_mut(sensor.detection_entity) {
+                            detector.on_side = true;
+                            println!("[start] Collision with the wall");
+                        }
+                    }
+                }
+                CollisionEvent::Stopped(collision_a, collision_b, _) => {
+                    if *collision_b == sensor_entity && walls_query.get(*collision_a).is_ok() {
+                        if let Ok(mut detector) = side_detectors.get_mut(sensor.detection_entity) {
+                            detector.on_side = false;
+                            println!("[stop] Collision with the wall");
+                        }
+                    }
+                }
+            }
         }
     }
 }

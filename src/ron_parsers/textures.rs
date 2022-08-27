@@ -29,6 +29,7 @@ pub struct PlayerSprites {
     pub death: SpriteAssetInfo,
     pub jump: SpriteAssetInfo,
     pub attack: SpriteAssetInfo,
+    pub wall_slide: SpriteAssetInfo,
 }
 
 #[derive(Debug)]
@@ -73,6 +74,7 @@ enum DeserializedPlayerType {
     Jump,
     Hurt,
     Death,
+    WallSlide,
 }
 
 #[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
@@ -167,6 +169,7 @@ impl GameTextures {
         let mut hurt = None;
         let mut death = None;
         let mut attack = None;
+        let mut wall_slide = None;
 
         for texture in player_textures.iter() {
             let player_texture = asset_server.load(texture.texture_path.as_str());
@@ -211,6 +214,9 @@ impl GameTextures {
                 DeserializedPlayerType::Attack => {
                     attack = Some(sprite_asset_info);
                 }
+                DeserializedPlayerType::WallSlide => {
+                    wall_slide = Some(sprite_asset_info);
+                }
             }
         }
 
@@ -222,6 +228,7 @@ impl GameTextures {
             || hurt.is_none()
             || death.is_none()
             || attack.is_none()
+            || wall_slide.is_none()
         {
             panic!("All animations for the player must be mapped");
         }
@@ -234,6 +241,7 @@ impl GameTextures {
             hurt: hurt.unwrap(),
             death: death.unwrap(),
             attack: attack.unwrap(),
+            wall_slide: wall_slide.unwrap(),
         }
     }
 

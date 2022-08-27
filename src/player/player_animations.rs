@@ -9,7 +9,7 @@ use crate::{
     PlayerIsDeadEvent, PlayerIsHitEvent,
 };
 
-use super::{GroundDetection, Player};
+use super::{GroundDetection, Player, SideDetector};
 pub struct PlayerAnimationPlugin;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
@@ -35,6 +35,9 @@ pub enum PlayerAnimationState {
 
     /// Player climbs
     Climb,
+
+    /// Player sliding by the wall
+    WallSlide,
 
     /// Player has taken damage but didn't die
     Hit(PlayerProcessAnimation),
@@ -71,6 +74,9 @@ impl Plugin for PlayerAnimationPlugin {
                 .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
                 .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
                 .with_system(player_jump_animation.run_in_state(PlayerAnimationState::Jump))
+                .with_system(
+                    player_wall_slide_animation.run_in_state(PlayerAnimationState::WallSlide),
+                )
                 .with_system(
                     player_attack_animation
                         .run_in_state(PlayerAnimationState::Attack(PlayerProcessAnimation::Start)),
@@ -176,6 +182,11 @@ fn player_animation_textures_processor(
                         attacks.0 = false;
                     }
                 },
+                PlayerAnimationState::WallSlide => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.wall_slide.texture.clone());
+                }
                 PlayerAnimationState::Death(death_animation) => match death_animation {
                     PlayerProcessAnimation::Start => {
                         // Spawn player death animation
@@ -222,11 +233,16 @@ fn player_animation_textures_processor(
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
-    mut player_query: Query<(&OnMove, &Climber, &GroundDetection, &Attacks), With<Player>>,
+    mut player_query: Query<
+        (&OnMove, &Climber, &GroundDetection, &SideDetector, &Attacks),
+        With<Player>,
+    >,
     mut player_hit_event: EventReader<PlayerIsHitEvent>,
     mut player_death_event: EventReader<PlayerIsDeadEvent>,
 ) {
-    if let Ok((on_move, climber, ground_detection, attacks)) = player_query.get_single_mut() {
+    if let Ok((on_move, climber, ground_detection, side_detector, attacks)) =
+        player_query.get_single_mut()
+    {
         if player_death_event.iter().next().is_some() {
             commands.insert_resource(NextState(PlayerAnimationState::Death(
                 PlayerProcessAnimation::Start,
@@ -273,6 +289,15 @@ fn player_animation_processor(
         }
 
         if !ground_detection.on_ground {
+            // Wall slide has more priority than just jump
+            if side_detector.on_side {
+                if player_animation_state.0 != PlayerAnimationState::WallSlide {
+                    commands.insert_resource(NextState(PlayerAnimationState::WallSlide));
+                }
+
+                return;
+            }
+
             if player_animation_state.0 != PlayerAnimationState::Jump {
                 commands.insert_resource(NextState(PlayerAnimationState::Jump));
             }
@@ -350,6 +375,26 @@ fn player_run_animation(
             sprite.index += 1;
 
             if sprite.index >= player_materials.run.items {
+                sprite.index = 0;
+            }
+        }
+    }
+}
+
+fn player_wall_slide_animation(
+    time: Res<Time>,
+    materials: Res<GameTextures>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut IdleAnimation), With<Player>>,
+) {
+    let player_materials = &materials.player;
+
+    for (mut sprite, mut wall_slide_animation) in query.iter_mut() {
+        wall_slide_animation.timer.tick(time.delta());
+
+        if wall_slide_animation.timer.finished() {
+            sprite.index += 1;
+
+            if sprite.index >= player_materials.wall_slide.items {
                 sprite.index = 0;
             }
         }

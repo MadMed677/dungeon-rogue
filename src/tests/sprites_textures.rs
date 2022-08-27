@@ -52,6 +52,12 @@ pub fn prepare_sprites() -> GameTextures {
                 items: 10,
                 texture: Handle::default(),
             },
+            wall_slide: SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                items: 10,
+                texture: Handle::default(),
+            },
         },
         enemies: EnemiesSprites {
             gray: SpriteAssetInfo {
