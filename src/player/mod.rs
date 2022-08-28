@@ -4,7 +4,7 @@ mod player_animations;
 mod player_physics;
 
 pub use player_animations::{PlayerAnimationState, PlayerProcessAnimation};
-pub use player_physics::{GroundDetection, Player, SideDetector, SideSensor};
+pub use player_physics::{GroundDetection, JumpState, Player, SideDetector, SideSensor};
 
 pub struct PlayerPlugin;
 

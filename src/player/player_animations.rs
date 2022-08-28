@@ -50,6 +50,9 @@ pub enum PlayerAnimationState {
     /// Player jumps
     Jump,
 
+    /// Player double jumps
+    DoubleJump,
+
     /// Player attacks
     Attack(PlayerProcessAnimation),
 }
@@ -76,6 +79,9 @@ impl Plugin for PlayerAnimationPlugin {
                 .with_system(player_climb_animation.run_in_state(PlayerAnimationState::Climb))
                 .with_system(player_run_animation.run_in_state(PlayerAnimationState::Run))
                 .with_system(player_jump_animation.run_in_state(PlayerAnimationState::Jump))
+                .with_system(
+                    player_double_jump_animation.run_in_state(PlayerAnimationState::DoubleJump),
+                )
                 .with_system(
                     player_wall_slide_animation.run_in_state(PlayerAnimationState::WallSlide),
                 )
@@ -165,6 +171,11 @@ fn player_animation_textures_processor(
                     commands
                         .entity(entity)
                         .insert(materials.player.jump.texture.clone());
+                }
+                PlayerAnimationState::DoubleJump => {
+                    commands
+                        .entity(entity)
+                        .insert(materials.player.double_jump.texture.clone());
                 }
                 PlayerAnimationState::Attack(attack_animation) => match attack_animation {
                     PlayerProcessAnimation::Start => {
@@ -304,18 +315,19 @@ fn player_animation_processor(
 
 fn player_idle_animation(
     time: Res<Time>,
+    materials: Res<GameTextures>,
     mut query: Query<(&mut TextureAtlasSprite, &mut MediumAnimation), With<Player>>,
 ) {
-    for (mut sprite, mut animation) in query.iter_mut() {
-        // Do nothing if the player is not in idle
+    let player_materials = &materials.player;
 
+    for (mut sprite, mut animation) in query.iter_mut() {
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
             sprite.index += 1;
 
             // 24 - is a maximum amount of textures for idle state
-            if sprite.index >= 24 {
+            if sprite.index >= player_materials.idle.items {
                 // Loop the animation
                 sprite.index = 0;
             }
@@ -387,16 +399,36 @@ fn player_wall_slide_animation(
 
 fn player_jump_animation(
     time: Res<Time>,
+    materials: Res<GameTextures>,
     mut query: Query<(&mut TextureAtlasSprite, &mut FastAnimation), With<Player>>,
 ) {
+    let player_materials = &materials.player;
+
     for (mut sprite, mut animation) in query.iter_mut() {
         animation.timer.tick(time.delta());
         if animation.timer.finished() {
-            // let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-
             sprite.index += 1;
 
-            if sprite.index >= 13 {
+            if sprite.index >= player_materials.jump.items {
+                sprite.index = 0;
+            }
+        }
+    }
+}
+
+fn player_double_jump_animation(
+    time: Res<Time>,
+    materials: Res<GameTextures>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut FastAnimation), With<Player>>,
+) {
+    let player_materials = &materials.player;
+
+    for (mut sprite, mut animation) in query.iter_mut() {
+        animation.timer.tick(time.delta());
+        if animation.timer.finished() {
+            sprite.index += 1;
+
+            if sprite.index >= player_materials.double_jump.items {
                 sprite.index = 0;
             }
         }
@@ -477,7 +509,6 @@ fn player_death_animation(
             // Send death state of 1 frome earlier to be able to remove the user
             //  and avoid the idle state
             if sprite.index >= player_materials.death.items {
-                // We should stop the animation and give back the control
                 sprite.index = 0;
 
                 commands.insert_resource(NextState(PlayerAnimationState::Death(

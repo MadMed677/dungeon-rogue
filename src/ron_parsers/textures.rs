@@ -28,6 +28,7 @@ pub struct PlayerSprites {
     pub hurt: SpriteAssetInfo,
     pub death: SpriteAssetInfo,
     pub jump: SpriteAssetInfo,
+    pub double_jump: SpriteAssetInfo,
     pub attack: SpriteAssetInfo,
     pub wall_slide: SpriteAssetInfo,
 }
@@ -72,6 +73,7 @@ enum DeserializedPlayerType {
     Climb,
     Attack,
     Jump,
+    DoubleJump,
     Hurt,
     Death,
     WallSlide,
@@ -166,6 +168,7 @@ impl GameTextures {
         let mut run = None;
         let mut climb = None;
         let mut jump = None;
+        let mut double_jump = None;
         let mut hurt = None;
         let mut death = None;
         let mut attack = None;
@@ -205,6 +208,9 @@ impl GameTextures {
                 DeserializedPlayerType::Jump => {
                     jump = Some(sprite_asset_info);
                 }
+                DeserializedPlayerType::DoubleJump => {
+                    double_jump = Some(sprite_asset_info);
+                }
                 DeserializedPlayerType::Hurt => {
                     hurt = Some(sprite_asset_info);
                 }
@@ -225,6 +231,7 @@ impl GameTextures {
             || run.is_none()
             || climb.is_none()
             || jump.is_none()
+            || double_jump.is_none()
             || hurt.is_none()
             || death.is_none()
             || attack.is_none()
@@ -238,6 +245,7 @@ impl GameTextures {
             run: run.unwrap(),
             climb: climb.unwrap(),
             jump: jump.unwrap(),
+            double_jump: double_jump.unwrap(),
             hurt: hurt.unwrap(),
             death: death.unwrap(),
             attack: attack.unwrap(),

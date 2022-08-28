@@ -15,6 +15,16 @@ use crate::common::{
 #[derive(Component, Default, Inspectable)]
 pub struct Player;
 
+/// Contains the state of jumps for the entity
+#[derive(Component, Default, Inspectable)]
+pub struct JumpState {
+    /// Describes how many jumps the entity already made
+    jumps_made: u8,
+
+    /// Describes can the entity jump again or not
+    can_jump: bool,
+}
+
 #[derive(Component, Debug, Inspectable)]
 pub struct GroundDetection {
     pub on_ground: bool,
@@ -54,8 +64,14 @@ pub struct PlayerPhysicsPlugin;
 impl Plugin for PlayerPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(
+            sync_jumps_made
+                .run_in_state(ApplicationState::Game)
+                .before("jump"),
+        )
+        .add_system(
             player_jump
                 .run_in_state(ApplicationState::Game)
+                .label("jump")
                 .after("movement"),
         )
         .add_system(
@@ -73,6 +89,7 @@ impl Plugin for PlayerPhysicsPlugin {
                 .with_system(spawn_side_sensor)
                 .with_system(ground_detection)
                 .with_system(wall_detection)
+                // .with_system(sync_jumps_made)
                 .with_system(dead)
                 .into(),
         )
@@ -128,6 +145,10 @@ fn spawn_player(
             })
             .insert(player_direction)
             .insert(OnMove(false))
+            .insert(JumpState {
+                can_jump: false,
+                jumps_made: 0,
+            })
             .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Climber {
                 intersaction_elements: HashSet::new(),
@@ -140,6 +161,36 @@ fn spawn_player(
                 max: 10,
             })
             .insert(Speed(110.0));
+    }
+}
+
+fn sync_jumps_made(
+    mut player_query: Query<(&mut JumpState, &GroundDetection, &SideDetector), With<Player>>,
+) {
+    if let Ok((mut jumps_state, ground_detection, side_detector)) = player_query.get_single_mut() {
+        // If the player on ground we should
+        //  flush jumps_made into 0
+        if ground_detection.on_ground {
+            jumps_state.jumps_made = 0;
+            jumps_state.can_jump = true;
+
+            return;
+        }
+
+        if side_detector.on_side {
+            jumps_state.jumps_made = 1;
+            jumps_state.can_jump = true;
+
+            return;
+        }
+
+        if jumps_state.jumps_made >= 2 {
+            jumps_state.can_jump = false;
+
+            return;
+        }
+
+        jumps_state.jumps_made = 1;
     }
 }
 
@@ -232,7 +283,7 @@ fn player_jump(
             &mut ExternalImpulse,
             &mut Climber,
             &Speed,
-            &GroundDetection,
+            &mut JumpState,
             &SideDetector,
             &MovementDirection,
         ),
@@ -243,18 +294,17 @@ fn player_jump(
         mut external_impulse,
         mut climber,
         speed,
-        ground_detection,
+        mut jump_state,
         side_detector,
         direction,
     )) = player_query.get_single_mut()
     {
-        if keyboard.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing)
-        {
-            let impulse = 55.0;
+        // If the player can't jump just return
+        if !jump_state.can_jump {
+            return;
+        }
 
-            external_impulse.impulse = Vec2::new(0.0, impulse);
-            climber.climbing = false;
-        } else if keyboard.just_pressed(KeyCode::Space) && side_detector.on_side {
+        if keyboard.just_pressed(KeyCode::Space) && side_detector.on_side {
             let x_impulse = match *direction {
                 MovementDirection::Right => -speed.0,
                 MovementDirection::Left => speed.0,
@@ -262,6 +312,13 @@ fn player_jump(
 
             external_impulse.impulse.x = x_impulse * 2.0;
             external_impulse.impulse.y = 60.0;
+            jump_state.jumps_made += 1;
+        } else if keyboard.just_pressed(KeyCode::Space) {
+            let impulse = 55.0;
+
+            external_impulse.impulse = Vec2::new(0.0, impulse);
+            climber.climbing = false;
+            jump_state.jumps_made += 1;
         }
     }
 }
