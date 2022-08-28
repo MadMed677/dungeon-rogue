@@ -37,6 +37,15 @@ DeserializedGameTextures(
             column_size: 10,
         ),
         DeserializedPlayerSpriteInfo(
+            sprite_type: DoubleJump,
+            width: 30.0,
+            height: 32.0,
+            offset: 18.0,
+            texture_path: "atlas/player/apple@double-jump-sheet.png",
+            items: 10,
+            column_size: 10,
+        ),
+        DeserializedPlayerSpriteInfo(
             sprite_type: Attack,
             width: 42.0,
             height: 32.0,
@@ -71,15 +80,6 @@ DeserializedGameTextures(
             texture_path: "atlas/player/apple@wall-slide-sheet.png",
             items: 6,
             column_size: 6,
-        ),
-        DeserializedPlayerSpriteInfo(
-            sprite_type: DoubleJump,
-            width: 28.0,
-            height: 32.0,
-            offset: 16.0,
-            texture_path: "atlas/player/apple@double-jump-sheet.png",
-            items: 10,
-            column_size: 10,
         ),
     ],
     enemies: [

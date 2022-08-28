@@ -8,7 +8,7 @@ use crate::common::{
 };
 use crate::{ron_parsers::GameTextures, ApplicationState, PlayerIsDeadEvent, PlayerIsHitEvent};
 
-use super::{GroundDetection, Player, SideDetector};
+use super::{JumpState, Player, SideDetector};
 pub struct PlayerAnimationPlugin;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
@@ -227,14 +227,11 @@ fn player_animation_textures_processor(
 fn player_animation_processor(
     player_animation_state: Res<CurrentState<PlayerAnimationState>>,
     mut commands: Commands,
-    mut player_query: Query<
-        (&OnMove, &Climber, &GroundDetection, &SideDetector, &Attacks),
-        With<Player>,
-    >,
+    mut player_query: Query<(&OnMove, &Climber, &JumpState, &SideDetector, &Attacks), With<Player>>,
     mut player_hit_event: EventReader<PlayerIsHitEvent>,
     mut player_death_event: EventReader<PlayerIsDeadEvent>,
 ) {
-    if let Ok((on_move, climber, ground_detection, side_detector, attacks)) =
+    if let Ok((on_move, climber, jump_state, side_detector, attacks)) =
         player_query.get_single_mut()
     {
         if player_death_event.iter().next().is_some() {
@@ -282,7 +279,8 @@ fn player_animation_processor(
             return;
         }
 
-        if !ground_detection.on_ground {
+        // If the player made more then one jump
+        if jump_state.jumps_made > 0 {
             // Wall slide has more priority than just jump
             if side_detector.on_side {
                 if player_animation_state.0 != PlayerAnimationState::WallSlide {
@@ -292,8 +290,14 @@ fn player_animation_processor(
                 return;
             }
 
-            if player_animation_state.0 != PlayerAnimationState::Jump {
+            // We should show jump animation
+            if jump_state.jumps_made == 1 && player_animation_state.0 != PlayerAnimationState::Jump
+            {
                 commands.insert_resource(NextState(PlayerAnimationState::Jump));
+            } else if jump_state.jumps_made > 1
+                && player_animation_state.0 != PlayerAnimationState::DoubleJump
+            {
+                commands.insert_resource(NextState(PlayerAnimationState::DoubleJump));
             }
 
             return;
@@ -419,7 +423,7 @@ fn player_jump_animation(
 fn player_double_jump_animation(
     time: Res<Time>,
     materials: Res<GameTextures>,
-    mut query: Query<(&mut TextureAtlasSprite, &mut FastAnimation), With<Player>>,
+    mut query: Query<(&mut TextureAtlasSprite, &mut MediumAnimation), With<Player>>,
 ) {
     let player_materials = &materials.player;
 

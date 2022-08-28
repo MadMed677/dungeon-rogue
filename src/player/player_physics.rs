@@ -19,10 +19,10 @@ pub struct Player;
 #[derive(Component, Default, Inspectable)]
 pub struct JumpState {
     /// Describes how many jumps the entity already made
-    jumps_made: u8,
+    pub jumps_made: u8,
 
     /// Describes can the entity jump again or not
-    can_jump: bool,
+    pub can_jump: bool,
 }
 
 #[derive(Component, Debug, Inspectable)]
