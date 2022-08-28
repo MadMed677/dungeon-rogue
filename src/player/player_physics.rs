@@ -231,7 +231,6 @@ fn player_jump(
         (
             &mut ExternalImpulse,
             &mut Climber,
-            &mut Velocity,
             &Speed,
             &GroundDetection,
             &SideDetector,
@@ -243,7 +242,6 @@ fn player_jump(
     if let Ok((
         mut external_impulse,
         mut climber,
-        mut velocity,
         speed,
         ground_detection,
         side_detector,
@@ -252,22 +250,18 @@ fn player_jump(
     {
         if keyboard.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing)
         {
-            let impulse = 65.0;
+            let impulse = 55.0;
 
             external_impulse.impulse = Vec2::new(0.0, impulse);
             climber.climbing = false;
-        } else if keyboard.just_pressed(KeyCode::Space) && side_detector.on_side
-        // && (keyboard.pressed(KeyCode::Left) || keyboard.pressed(KeyCode::Right))
-        {
-            let impulse = speed.0 * 15.0;
-
+        } else if keyboard.just_pressed(KeyCode::Space) && side_detector.on_side {
             let x_impulse = match *direction {
-                MovementDirection::Right => -impulse,
-                MovementDirection::Left => impulse,
+                MovementDirection::Right => -speed.0,
+                MovementDirection::Left => speed.0,
             };
 
-            external_impulse.impulse.y = 50.0;
-            velocity.linvel.x = x_impulse;
+            external_impulse.impulse.x = x_impulse * 2.0;
+            external_impulse.impulse.y = 60.0;
         }
     }
 }
