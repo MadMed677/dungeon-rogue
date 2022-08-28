@@ -47,16 +47,26 @@ struct PlayerBundle {
     entity_instance: EntityInstance,
 }
 
+const GRAVITY_SCALE: f32 = 3.0;
+
 pub struct PlayerPhysicsPlugin;
 
 impl Plugin for PlayerPhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
+        app.add_system(
+            player_jump
+                .run_in_state(ApplicationState::Game)
+                .after("movement"),
+        )
+        .add_system(
+            player_movement
+                .run_in_state(ApplicationState::Game)
+                .label("movement"),
+        )
+        .add_system_set(
             ConditionSet::new()
                 .run_in_state(ApplicationState::Game)
                 .with_system(spawn_player)
-                .with_system(player_movement)
-                .with_system(player_jump)
                 .with_system(detect_climb)
                 .with_system(ignore_gravity_during_climbing)
                 .with_system(spawn_ground_sensor)
@@ -78,7 +88,8 @@ fn spawn_player(
     if let Ok((player_entity, transform)) = player_query.get_single() {
         let sprite_asset_info = &materials.player.idle;
 
-        let sprite_width = sprite_asset_info.width;
+        // let sprite_width = sprite_asset_info.width;
+        let sprite_width = 28.0;
         let sprite_height = sprite_asset_info.height;
 
         let player_direction = MovementDirection::Right;
@@ -90,9 +101,9 @@ fn spawn_player(
             // Add Velocity component to iterate via it but with zero value
             .insert(Velocity::zero())
             .insert(ExternalImpulse::default())
-            .insert(Friction::new(0.01))
+            .insert(Friction::new(0.0))
             .insert(LockedAxes::ROTATION_LOCKED)
-            .insert(GravityScale(3.0))
+            .insert(GravityScale(GRAVITY_SCALE))
             .insert(ColliderMassProperties::Density(1.0))
             .insert(Attacks(false))
             .insert(Attackable)
@@ -128,7 +139,7 @@ fn spawn_player(
                 current: 10,
                 max: 10,
             })
-            .insert(Speed(120.0));
+            .insert(Speed(110.0));
     }
 }
 
@@ -211,16 +222,52 @@ fn player_movement(
     }
 }
 
+/// Jump when the player in on ground or on side
+/// When the player on the ground the player jumps
+///  only by `y` axis. But when on side by `x` and `y` axis
 fn player_jump(
     keyboard: Res<Input<KeyCode>>,
-    mut player_query: Query<(&mut ExternalImpulse, &mut Climber, &GroundDetection), With<Player>>,
+    mut player_query: Query<
+        (
+            &mut ExternalImpulse,
+            &mut Climber,
+            &mut Velocity,
+            &Speed,
+            &GroundDetection,
+            &SideDetector,
+            &MovementDirection,
+        ),
+        With<Player>,
+    >,
 ) {
-    if let Ok((mut external_impulse, mut climber, ground_detection)) = player_query.get_single_mut()
+    if let Ok((
+        mut external_impulse,
+        mut climber,
+        mut velocity,
+        speed,
+        ground_detection,
+        side_detector,
+        direction,
+    )) = player_query.get_single_mut()
     {
         if keyboard.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing)
         {
-            external_impulse.impulse = Vec2::new(0.0, 65.0);
+            let impulse = 65.0;
+
+            external_impulse.impulse = Vec2::new(0.0, impulse);
             climber.climbing = false;
+        } else if keyboard.just_pressed(KeyCode::Space) && side_detector.on_side
+        // && (keyboard.pressed(KeyCode::Left) || keyboard.pressed(KeyCode::Right))
+        {
+            let impulse = speed.0 * 15.0;
+
+            let x_impulse = match *direction {
+                MovementDirection::Right => -impulse,
+                MovementDirection::Left => impulse,
+            };
+
+            external_impulse.impulse.y = 50.0;
+            velocity.linvel.x = x_impulse;
         }
     }
 }
@@ -293,29 +340,46 @@ fn spawn_side_sensor(
 }
 
 fn wall_detection(
-    mut side_detectors: Query<&mut SideDetector>,
-    side_sensors: Query<(Entity, &SideSensor)>,
+    mut side_detectors: Query<(&mut SideDetector, &mut GravityScale, &mut Velocity)>,
+    mut side_sensors: Query<(Entity, &mut SideSensor)>,
     mut collisions: EventReader<CollisionEvent>,
     walls_query: Query<Entity, With<WallCollision>>,
 ) {
-    for (sensor_entity, sensor) in side_sensors.iter() {
+    for (sensor_entity, mut sensor) in side_sensors.iter_mut() {
         for collision in collisions.iter() {
             match collision {
                 CollisionEvent::Started(collision_a, collision_b, _) => {
-                    if *collision_b == sensor_entity && walls_query.get(*collision_a).is_ok() {
-                        if let Ok(mut detector) = side_detectors.get_mut(sensor.detection_entity) {
-                            detector.on_side = true;
-                            println!("[start] Collision with the wall");
-                        }
+                    if *collision_b == sensor_entity
+                        && walls_query.get(*collision_a).is_ok()
+                        && side_detectors.get(sensor.detection_entity).is_ok()
+                    {
+                        sensor.intersecting_entities.insert(*collision_a);
                     }
                 }
                 CollisionEvent::Stopped(collision_a, collision_b, _) => {
-                    if *collision_b == sensor_entity && walls_query.get(*collision_a).is_ok() {
-                        if let Ok(mut detector) = side_detectors.get_mut(sensor.detection_entity) {
-                            detector.on_side = false;
-                            println!("[stop] Collision with the wall");
-                        }
+                    if *collision_b == sensor_entity
+                        && walls_query.get(*collision_a).is_ok()
+                        && side_detectors.get(sensor.detection_entity).is_ok()
+                    {
+                        sensor.intersecting_entities.remove(collision_a);
                     }
+                }
+            }
+        }
+
+        if let Ok((mut side_detector, mut gravity, mut velocity)) =
+            side_detectors.get_mut(sensor.detection_entity)
+        {
+            let next_on_side = !sensor.intersecting_entities.is_empty();
+
+            if side_detector.on_side != next_on_side {
+                side_detector.on_side = next_on_side;
+
+                if next_on_side {
+                    gravity.0 = 0.1;
+                    velocity.linvel = Vec2::ZERO;
+                } else {
+                    gravity.0 = GRAVITY_SCALE;
                 }
             }
         }
@@ -353,9 +417,7 @@ fn ground_detection(
                 }
                 CollisionEvent::Stopped(collision_a, collision_b, _) => {
                     if (*collision_b == ground_sensor_entity)
-                        && ground_detectors
-                            .get_mut(ground_sensor.detection_entity)
-                            .is_ok()
+                        && ground_detectors.get(ground_sensor.detection_entity).is_ok()
                     {
                         ground_sensor.intersecting_entities.remove(collision_a);
 
@@ -363,9 +425,7 @@ fn ground_detection(
                     }
 
                     if (*collision_a == ground_sensor_entity)
-                        && ground_detectors
-                            .get_mut(ground_sensor.detection_entity)
-                            .is_ok()
+                        && ground_detectors.get(ground_sensor.detection_entity).is_ok()
                     {
                         ground_sensor.intersecting_entities.remove(collision_b);
 

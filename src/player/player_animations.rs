@@ -23,6 +23,9 @@ impl Default for PlayerProcessAnimation {
     }
 }
 
+#[derive(Component)]
+struct PlayerDeath;
+
 /// Describes animation state of the player
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Inspectable)]
 pub enum PlayerAnimationState {
@@ -193,7 +196,8 @@ fn player_animation_textures_processor(
                             })
                             .insert(MediumAnimation {
                                 timer: Timer::from_seconds(0.1, true),
-                            });
+                            })
+                            .insert(PlayerDeath);
 
                         // Remove the player from the scene
                         commands.entity(entity).despawn_recursive();
@@ -425,26 +429,19 @@ fn player_attack_animation(
 
 fn player_hurt_animation(
     mut commands: Commands,
-    texture_atlases: Res<Assets<TextureAtlas>>,
+    materials: Res<GameTextures>,
     time: Res<Time>,
-    mut query: Query<
-        (
-            &mut TextureAtlasSprite,
-            &Handle<TextureAtlas>,
-            &mut MediumAnimation,
-        ),
-        With<Player>,
-    >,
+    mut query: Query<(&mut TextureAtlasSprite, &mut MediumAnimation), With<Player>>,
 ) {
-    for (mut sprite, texture_atlas_handle, mut animation) in query.iter_mut() {
+    let player_materials = &materials.player;
+
+    for (mut sprite, mut animation) in query.iter_mut() {
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-
             sprite.index += 1;
 
-            if sprite.index >= texture_atlas.textures.len() {
+            if sprite.index >= player_materials.hurt.items {
                 // We should stop the animation and give back the control
                 sprite.index = 0;
 
@@ -459,12 +456,18 @@ fn player_hurt_animation(
 fn player_death_animation(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(
-        &mut TextureAtlasSprite,
-        &mut MediumAnimation,
-        &mut Visibility,
-    )>,
+    materials: Res<GameTextures>,
+    mut query: Query<
+        (
+            &mut TextureAtlasSprite,
+            &mut MediumAnimation,
+            &mut Visibility,
+        ),
+        With<PlayerDeath>,
+    >,
 ) {
+    let player_materials = &materials.player;
+
     for (mut sprite, mut animation, mut visibility) in query.iter_mut() {
         animation.timer.tick(time.delta());
 
@@ -473,7 +476,7 @@ fn player_death_animation(
 
             // Send death state of 1 frome earlier to be able to remove the user
             //  and avoid the idle state
-            if sprite.index >= 36 {
+            if sprite.index >= player_materials.death.items {
                 // We should stop the animation and give back the control
                 sprite.index = 0;
 
