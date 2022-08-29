@@ -2,10 +2,11 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
+use crate::common::{Attackable, Attacks, Health};
 use crate::{
     enemy::Enemy,
     player::{Player, SideDetector, SideSensor},
-    ApplicationState, Attackable, Attacks, Health, PlayerIsHitEvent,
+    ApplicationState, PlayerIsHitEvent,
 };
 
 pub struct CombatPlugin;

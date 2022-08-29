@@ -5,7 +5,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_rapier2d::prelude::*;
 
-use crate::{player::Player, Climbable};
+use crate::{common::Climbable, player::Player};
 
 enum CollisionId {
     Dirt = 1,

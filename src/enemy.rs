@@ -5,8 +5,9 @@ use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    ron_parsers::GameTextures, ApplicationState, Attackable, Health, MovementAnimation,
-    MovementDirection, OnMove, Speed,
+    common::{Attackable, Health, MediumAnimation, MovementDirection, OnMove, Speed},
+    ron_parsers::GameTextures,
+    ApplicationState,
 };
 
 pub struct EnemyPlugin;
@@ -134,7 +135,7 @@ fn enemy_movement_animation(
         (
             &mut TextureAtlasSprite,
             &Handle<TextureAtlas>,
-            &mut MovementAnimation,
+            &mut MediumAnimation,
             &OnMove,
         ),
         With<Enemy>,
@@ -274,7 +275,7 @@ fn spawn_enemy(
             .insert(MovementDirection::Right)
             .insert(Attackable)
             // .insert(ActiveEvents::COLLISION_EVENTS)
-            .insert(MovementAnimation {
+            .insert(MediumAnimation {
                 timer: Timer::from_seconds(0.12, true),
             })
             .insert(Speed(80.0))

@@ -6,10 +6,10 @@ use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_inspector_egui::{Inspectable, InspectorPlugin, RegisterInspectable};
 use iyes_loopless::state::CurrentState;
 
+use crate::common::{Attacks, Climbable, Health, MovementDirection, OnMove, Speed};
 use crate::enemy::{Enemy, EnemyType, Patrol};
-use crate::player::{Player, PlayerAnimationState};
+use crate::player::{JumpState, Player, PlayerAnimationState, SideDetector};
 use crate::tutorial::{Tutorial, TutorialPassed, TutorialType};
-use crate::{Attacks, Climbable, Health, MovementDirection, OnMove, Speed};
 
 pub struct DebugPlugin;
 
@@ -29,7 +29,9 @@ enum DebugPlayerAnimationState {
     Hit,
     Death,
     Jump,
+    DoubleJump,
     Attack,
+    WallSlide,
 }
 
 impl Plugin for DebugPlugin {
@@ -48,9 +50,11 @@ impl Plugin for DebugPlugin {
                 .register_inspectable::<MovementDirection>()
                 .register_inspectable::<OnMove>()
                 .register_inspectable::<Attacks>()
+                .register_inspectable::<SideDetector>()
                 .register_inspectable::<EnemyType>()
                 .register_inspectable::<Patrol>()
                 .register_inspectable::<Health>()
+                .register_inspectable::<JumpState>()
                 // .register_inspectable::<PlayerAnimationState>()
                 .add_stage_after(CoreStage::Update, DEBUG, SystemStage::single_threaded())
                 .add_system_to_stage(DEBUG, debug_collisions)
@@ -86,6 +90,12 @@ fn debug_state(
             }
             PlayerAnimationState::Jump => {
                 *debug_player_animation_state = DebugPlayerAnimationState::Jump;
+            }
+            PlayerAnimationState::DoubleJump => {
+                *debug_player_animation_state = DebugPlayerAnimationState::DoubleJump;
+            }
+            PlayerAnimationState::WallSlide => {
+                *debug_player_animation_state = DebugPlayerAnimationState::WallSlide;
             }
             PlayerAnimationState::Attack(_) => {
                 *debug_player_animation_state = DebugPlayerAnimationState::Attack;

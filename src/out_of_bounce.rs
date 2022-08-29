@@ -3,7 +3,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 
-use crate::{player::Player, ApplicationState, Health};
+use crate::{common::Health, player::Player, ApplicationState};
 
 pub struct OutOfBouncePlugin;
 
