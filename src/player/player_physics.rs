@@ -572,8 +572,8 @@ fn dead(
 mod player_tests {
     use crate::common::{Climber, Health, MovementDirection, Speed};
     use crate::player::player_physics::{player_jump, spawn_player, PlayerBundle};
-    use crate::player::GroundDetection;
-    use crate::player::Player;
+    use crate::player::{GroundDetection, JumpState};
+    use crate::player::{Player, SideDetector};
     use crate::tests::sprites_textures::prepare_sprites;
     use crate::PlayerIsDeadEvent;
     use bevy::ecs::event::Events;
@@ -780,8 +780,10 @@ mod player_tests {
         assert_eq!(impulse.impulse, Vec2::new(0.0, 0.0));
     }
 
+    /// Player should jump from the ground which means that
+    ///  his impulse should be only by `y` axis
     #[test]
-    fn player_should_jump_by_space() {
+    fn player_should_jump_by_space_from_the_ground() {
         let mut app = App::new();
 
         app.insert_resource(prepare_sprites())
@@ -809,14 +811,14 @@ mod player_tests {
         input.press(KeyCode::Space);
         app.insert_resource(input);
 
-        let mut ground_detection = app
+        let mut jump_state = app
             .world
-            .get_mut::<GroundDetection>(player_id)
+            .get_mut::<JumpState>(player_id)
             .expect("Should have external impulse");
 
         // Change ground detection to `true` to be able to jump
         //  without ground detection player can't jump
-        ground_detection.on_ground = true;
+        jump_state.can_jump = true;
 
         app.update();
 
@@ -825,7 +827,75 @@ mod player_tests {
             .get::<ExternalImpulse>(player_id)
             .expect("Should have external impulse");
 
-        assert_eq!(impulse.impulse, Vec2::new(0.0, 65.0));
+        let jump_state = app.world.get::<JumpState>(player_id).unwrap();
+
+        assert_eq!(impulse.impulse, Vec2::new(0.0, 55.0));
+
+        // Also jumps_made should be increased by 1
+        assert_eq!(jump_state.jumps_made, 1);
+    }
+
+    /// Player should jump from the wall which means that
+    ///  his impulse should be from `x` and `y` axis
+    #[test]
+    fn player_should_jump_by_space_from_the_wall() {
+        let mut app = App::new();
+
+        app.insert_resource(prepare_sprites())
+            .add_system(spawn_player)
+            .add_system(player_jump)
+            .register_ldtk_entity::<PlayerBundle>("Player");
+
+        let player_id = app
+            .world
+            .spawn()
+            .insert(Player)
+            .insert(Transform::from_xyz(0.0, 0.0, 1.0))
+            .id();
+
+        let input = Input::<KeyCode>::default();
+        app.insert_resource(input);
+
+        // We should call first update to spawn an entity
+        // Because we don't know which system will run first
+        //  `spawn_player` or `player_movement` we should call first
+        // update and let it be
+        app.update();
+
+        let mut input = Input::<KeyCode>::default();
+        input.press(KeyCode::Space);
+        app.insert_resource(input);
+
+        let mut side_detector = app
+            .world
+            .get_mut::<SideDetector>(player_id)
+            .expect("Should have SideDetector component");
+
+        side_detector.on_side = true;
+
+        let mut jump_state = app
+            .world
+            .get_mut::<JumpState>(player_id)
+            .expect("Should have JumpState component");
+
+        // Change ground detection to `true` to be able to jump
+        //  without ground detection player can't jump
+        jump_state.can_jump = true;
+
+        app.update();
+
+        let speed = app.world.get::<Speed>(player_id).unwrap();
+        let impulse = app
+            .world
+            .get::<ExternalImpulse>(player_id)
+            .expect("Should have external impulse");
+
+        let jump_state = app.world.get::<JumpState>(player_id).unwrap();
+
+        assert_eq!(impulse.impulse, Vec2::new(-speed.0 * 2.0, 60.0));
+
+        // Also jumps_made should be increased by 1
+        assert_eq!(jump_state.jumps_made, 1);
     }
 
     #[test]

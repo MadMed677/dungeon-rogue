@@ -46,6 +46,12 @@ pub fn prepare_sprites() -> GameTextures {
                 items: 10,
                 texture: Handle::default(),
             },
+            double_jump: SpriteAssetInfo {
+                width: 10.0,
+                height: 10.0,
+                items: 10,
+                texture: Handle::default(),
+            },
             attack: SpriteAssetInfo {
                 width: 10.0,
                 height: 10.0,
