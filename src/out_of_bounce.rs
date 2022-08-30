@@ -41,7 +41,7 @@ fn spawn_dead_oob(
             .entity(dead_entity)
             .insert(Sensor)
             .insert(ActiveEvents::COLLISION_EVENTS)
-            .insert(Collider::cuboid(8.0, 8.0))
+            .insert(Collider::cuboid(2.0, 2.0))
             .insert_bundle(SpriteBundle {
                 sprite: Sprite {
                     color: Color::NONE,
@@ -51,7 +51,7 @@ fn spawn_dead_oob(
                     //     blue: 1.0,
                     //     alpha: 1.0,
                     // },
-                    custom_size: Some(Vec2::new(16.0, 16.0)),
+                    custom_size: Some(Vec2::new(4.0, 4.0)),
                     ..Default::default()
                 },
                 transform: *dead_transform,

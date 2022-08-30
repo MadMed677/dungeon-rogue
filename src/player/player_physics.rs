@@ -370,7 +370,7 @@ fn spawn_side_sensor(
 
             // Create one huge side sensor which will be more by `x` axis
             //  but less by `y` axis
-            let detector_shape = Collider::cuboid(half_extents.x + 4.0, half_extents.y - 3.0);
+            let detector_shape = Collider::cuboid(half_extents.x + 4.0, half_extents.y / 3.0);
 
             commands.entity(entity).with_children(|parent| {
                 parent
@@ -405,6 +405,11 @@ fn wall_detection(
                         && side_detectors.get(sensor.detection_entity).is_ok()
                     {
                         sensor.intersecting_entities.insert(*collision_a);
+                    } else if *collision_a == sensor_entity
+                        && walls_query.get(*collision_b).is_ok()
+                        && side_detectors.get(sensor.detection_entity).is_ok()
+                    {
+                        sensor.intersecting_entities.insert(*collision_b);
                     }
                 }
                 CollisionEvent::Stopped(collision_a, collision_b, _) => {
@@ -413,6 +418,11 @@ fn wall_detection(
                         && side_detectors.get(sensor.detection_entity).is_ok()
                     {
                         sensor.intersecting_entities.remove(collision_a);
+                    } else if *collision_a == sensor_entity
+                        && walls_query.get(*collision_b).is_ok()
+                        && side_detectors.get(sensor.detection_entity).is_ok()
+                    {
+                        sensor.intersecting_entities.remove(collision_b);
                     }
                 }
             }
