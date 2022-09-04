@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.13] - 2022-09-04
+
+| New HuD                              | New level with new ladders                       |
+| ------------------------------------ | ------------------------------------------------ |
+| ![0_1_13_hud](./docs/0_1_13_hud.gif) | ![0_1_13_new_layer](./docs/0_1_13_new_layer.gif) |
+
+### Changed
+
+#### HuD
+
+- Update player HuD. Now the HuD for the player visualized not above the player
+  but on the top-left corner
+- Update not only health count but also health bar
+- Decrease player health from `10` to `5`
+
+#### Audio
+
+- Update player background audio file and add extra ones.
+- Loop audio when it ends
+
+#### Font
+
+- Update default font color
+
+---
+
 ## [0.1.12] - 2022-08-29
 
 | Animation                                       | Animation name    |

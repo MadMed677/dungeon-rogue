@@ -54,7 +54,9 @@ fn start_bg_music(
         match audio_state.bg_state {
             // If the song is stopped or never played before we just need to start it
             BackgroundMusicState::Stopped => {
-                background_audio.play(audio_state.bg_handle.clone());
+                background_audio
+                    .play(audio_state.bg_handle.clone())
+                    .looped();
                 audio_state.bg_state = BackgroundMusicState::Playing;
             }
 
