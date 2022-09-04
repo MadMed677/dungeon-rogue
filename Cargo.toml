@@ -14,6 +14,7 @@ bevy = {version = "0.8", features = [
     "bevy_gilrs",
     "png",
     "hdr",
+    "trace",
     "filesystem_watcher",
     "x11"
 ]}

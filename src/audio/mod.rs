@@ -98,7 +98,8 @@ fn stop_bg_music(
 /// Loads audio. Initialized in PostStartup stage to be sure
 ///  that all `add_startup_systems` has been initialized
 fn load_audio(mut commands: Commands, assets: Res<AssetServer>, settings: Res<Settings>) {
-    let bgm_handle = assets.load("audio/deepwater-ruins.ogg");
+    let bgm_handle = assets.load("audio/sunny-sands.wav");
+    // let bgm_handle = assets.load("audio/deepwater-ruins.ogg");
 
     commands.insert_resource(AudioState {
         // By default turn on the audio. Later we should

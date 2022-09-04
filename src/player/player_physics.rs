@@ -49,12 +49,22 @@ pub struct SideSensor {
 #[derive(Bundle, LdtkEntity)]
 struct PlayerBundle {
     pub player: Player,
+    pub health: Health,
 
     #[worldly]
     pub worldly: Worldly,
 
     #[from_entity_instance]
     entity_instance: EntityInstance,
+}
+
+/// Doesn't matter which values we will set
+///  because on `spawn_player` system
+///  we will re-assign this value
+impl Default for Health {
+    fn default() -> Self {
+        Self { current: 1, max: 1 }
+    }
 }
 
 const GRAVITY_SCALE: f32 = 3.0;
@@ -89,7 +99,6 @@ impl Plugin for PlayerPhysicsPlugin {
                 .with_system(spawn_side_sensor)
                 .with_system(ground_detection)
                 .with_system(wall_detection)
-                // .with_system(sync_jumps_made)
                 .with_system(dead)
                 .into(),
         )
@@ -105,7 +114,6 @@ fn spawn_player(
     if let Ok((player_entity, transform)) = player_query.get_single() {
         let sprite_asset_info = &materials.player.idle;
 
-        // let sprite_width = sprite_asset_info.width;
         let sprite_width = 28.0;
         let sprite_height = sprite_asset_info.height;
 
@@ -131,7 +139,6 @@ fn spawn_player(
                 transform: Transform {
                     translation: transform.translation,
                     rotation: transform.rotation,
-                    // scale: transform.scale,
                     scale: Vec3::new(0.7, 0.7, 1.0),
                 },
                 sprite: TextureAtlasSprite {
@@ -156,10 +163,7 @@ fn spawn_player(
             })
             .insert(GroundDetection { on_ground: false })
             .insert(SideDetector { on_side: false })
-            .insert(Health {
-                current: 10,
-                max: 10,
-            })
+            .insert(Health { current: 5, max: 5 })
             .insert(Speed(110.0));
     }
 }

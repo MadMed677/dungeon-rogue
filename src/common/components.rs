@@ -60,7 +60,7 @@ pub struct Climber {
     pub climbing: bool,
 }
 
-#[derive(Component, Clone, Debug, Default, Inspectable)]
+#[derive(Component, Clone, Debug, Inspectable)]
 pub struct Health {
     /// Describes current health
     pub current: i32,

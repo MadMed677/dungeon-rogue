@@ -99,13 +99,13 @@ fn main() {
         //  destroy the whole UI at all
         // .add_plugin(TutorialPlugin)
         .add_plugin(PhysicsPlugin)
-        .add_plugin(HudPlugin)
         .add_plugin(MapPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(RonParsersPlugin)
         .add_plugin(OutOfBouncePlugin)
         .add_plugin(EnemyPlugin)
         .add_plugin(CombatPlugin)
+        .add_plugin(HudPlugin)
         .add_plugin(DebugPlugin)
         .run();
 }
