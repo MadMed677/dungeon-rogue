@@ -27,13 +27,13 @@ pub fn build_classic_text(
     asset_server: &Res<AssetServer>,
     params: Option<ClassicButtonTextParams>,
 ) -> TextBundle {
-    let button_params = params.unwrap_or(ClassicButtonTextParams { font_size: 20.0 });
+    let button_params = params.unwrap_or(ClassicButtonTextParams { font_size: 16.0 });
 
     TextBundle {
         text: Text::from_section(
             value,
             TextStyle {
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                font: asset_server.load("fonts/NicoPaint-Regular.ttf"),
                 font_size: button_params.font_size,
                 color: Color::WHITE,
             },

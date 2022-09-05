@@ -54,7 +54,9 @@ fn start_bg_music(
         match audio_state.bg_state {
             // If the song is stopped or never played before we just need to start it
             BackgroundMusicState::Stopped => {
-                background_audio.play(audio_state.bg_handle.clone());
+                background_audio
+                    .play(audio_state.bg_handle.clone())
+                    .looped();
                 audio_state.bg_state = BackgroundMusicState::Playing;
             }
 
@@ -98,7 +100,8 @@ fn stop_bg_music(
 /// Loads audio. Initialized in PostStartup stage to be sure
 ///  that all `add_startup_systems` has been initialized
 fn load_audio(mut commands: Commands, assets: Res<AssetServer>, settings: Res<Settings>) {
-    let bgm_handle = assets.load("audio/deepwater-ruins.ogg");
+    let bgm_handle = assets.load("audio/sunny-sands.wav");
+    // let bgm_handle = assets.load("audio/deepwater-ruins.ogg");
 
     commands.insert_resource(AudioState {
         // By default turn on the audio. Later we should
